@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: bumbee-mongodb
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: bumbee-redis
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: bumbee-api
+    ports:
+      - '3000:3000'
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/api/.env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/bumbee
+      - REDIS_HOST=redis
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
