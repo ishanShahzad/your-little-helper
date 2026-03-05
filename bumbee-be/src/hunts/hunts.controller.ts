@@ -65,4 +65,10 @@ export class HuntsController {
     const data = await this.huntsService.generateRecap(id);
     return { success: true, data };
   }
+
+  @Post('route')
+  async getRoute(@Body() body: { fromLat: number; fromLng: number; toLat: number; toLng: number }) {
+    const data = await this.huntsService.getWalkingRoute(body.fromLat, body.fromLng, body.toLat, body.toLng);
+    return { success: true, data };
+  }
 }
