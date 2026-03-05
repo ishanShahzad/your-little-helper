@@ -1,0 +1,8 @@
+{
+  "name": "bumbee",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Bumbee is a NestJS + React Native project. Run apps/api and apps/mobile separately — see README.md'"
+  }
+}
