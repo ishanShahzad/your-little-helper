@@ -6,9 +6,8 @@ A mobile-first app that helps families plan spontaneous outdoor adventures, scav
 
 ```
 bumbee/
-├── apps/
-│   ├── api/          # NestJS backend (MongoDB, Redis, Stripe, Socket.io)
-│   └── mobile/       # React Native Expo app
+├── bumbee-be/           # NestJS backend (MongoDB, Redis, Stripe, Socket.io)
+├── Bumbee-expo-app/     # React Native Expo app
 ├── docker-compose.yml
 └── README.md
 ```
@@ -29,7 +28,8 @@ bumbee/
 
 2. **Configure environment**
    ```bash
-   cp apps/api/.env.example apps/api/.env
+   cp bumbee-be/.env.example bumbee-be/.env
+   cp Bumbee-expo-app/.env.example Bumbee-expo-app/.env
    # Fill in your API keys (see below)
    ```
 
@@ -40,14 +40,14 @@ bumbee/
 
 4. **Run backend**
    ```bash
-   cd apps/api
+   cd bumbee-be
    npm install
    npm run start:dev
    ```
 
 5. **Run mobile app**
    ```bash
-   cd apps/mobile
+   cd Bumbee-expo-app
    npm install
    npx expo start
    ```

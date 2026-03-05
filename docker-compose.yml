@@ -19,7 +19,7 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: ./bumbee-be
       dockerfile: Dockerfile
     container_name: bumbee-api
     ports:
@@ -28,7 +28,7 @@ services:
       - mongodb
       - redis
     env_file:
-      - ./apps/api/.env
+      - ./bumbee-be/.env
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/bumbee
       - REDIS_HOST=redis
