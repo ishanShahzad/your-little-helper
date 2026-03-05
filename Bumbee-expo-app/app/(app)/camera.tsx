@@ -8,19 +8,17 @@ import { Colors } from '../../constants/colors';
 import api from '../../services/api';
 
 const characterNames: Record<string, string> = {
-  pirate: 'Captain Goldbeard',
-  spy: 'Agent B',
-  fairy: 'Sparkle',
-  unicorn: 'Stardust',
-  explorer: 'Scout',
+  pirate: 'Captain Goldbeard', spy: 'Agent B', fairy: 'Sparkle', unicorn: 'Stardust', explorer: 'Scout',
 };
-
 const characterEmojis: Record<string, string> = {
-  pirate: '🏴‍☠️',
-  spy: '🕵️',
-  fairy: '🧚',
-  unicorn: '🦄',
-  explorer: '🧭',
+  pirate: '🏴‍☠️', spy: '🕵️', fairy: '🧚', unicorn: '🦄', explorer: '🧭',
+};
+const characterTaglines: Record<string, string[]> = {
+  pirate: ['Captain Goldbeard was hiding here!', 'Arrr! You found me, matey!', 'Treasure spotted! Well done!'],
+  spy: ['Agent B says: mission complete!', 'You\'ve cracked the code!', 'The intel has been secured!'],
+  fairy: ['Sparkle left some fairy dust for you!', 'Magic detected at this spot!', 'The enchantment is working!'],
+  unicorn: ['Stardust\'s hoofprints are here!', 'Rainbow magic unlocked!', 'You found the magical trail!'],
+  explorer: ['Scout says: great discovery!', 'New territory mapped!', 'An explorer\'s dream find!'],
 };
 
 export default function CameraScreen() {
@@ -30,11 +28,15 @@ export default function CameraScreen() {
   const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
   const [photo, setPhoto] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const { currentHunt, selectedTheme, currentStopIndex } = useHuntStore();
+  const [showCelebration, setShowCelebration] = useState(false);
+  const { currentHunt, selectedTheme, currentStopIndex, completeStop } = useHuntStore();
 
   const theme = selectedTheme || currentHunt?.theme || 'explorer';
   const charName = characterNames[theme] || 'Scout';
   const charEmoji = characterEmojis[theme] || '🧭';
+  const taglines = characterTaglines[theme] || ['Great job!'];
+  const tagline = taglines[Math.floor(Math.random() * taglines.length)];
+  const stop = currentHunt?.stops[currentStopIndex];
   const isLastStop = currentHunt ? currentStopIndex >= currentHunt.stops.length - 1 : false;
 
   async function takePicture() {
@@ -43,10 +45,11 @@ export default function CameraScreen() {
       const result = await cameraRef.current.takePictureAsync({ quality: 0.85, base64: false });
       if (result?.uri) {
         setPhoto(result.uri);
-      } else {
-        Alert.alert('Error', 'Photo capture returned no image. Please try again.');
+        setShowCelebration(true);
+        // Auto-hide celebration after 3s
+        setTimeout(() => setShowCelebration(false), 3000);
       }
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Could not take photo. Please try again.');
     }
   }
@@ -55,67 +58,51 @@ export default function CameraScreen() {
     if (!photo) return;
     setSaving(true);
     try {
-      // Ensure media library permission
       if (!mediaPermission?.granted) {
         const perm = await requestMediaPermission();
         if (!perm.granted) {
-          Alert.alert('Permission Needed', 'Please grant photo library access to save photos.');
+          Alert.alert('Permission Needed', 'Please grant photo library access.');
           setSaving(false);
           return;
         }
       }
 
-      // Save to device gallery
-      try {
-        await MediaLibrary.createAssetAsync(photo);
-      } catch (saveErr) {
-        console.log('Could not save to gallery:', saveErr);
-        // Continue anyway — upload to server still
-      }
+      try { await MediaLibrary.createAssetAsync(photo); } catch {}
 
-      // Upload photo to backend
       try {
         const formData = new FormData();
-        formData.append('photo', {
-          uri: photo,
-          type: 'image/jpeg',
-          name: `hunt-stop-${currentStopIndex}.jpg`,
-        } as any);
-
+        formData.append('photo', { uri: photo, type: 'image/jpeg', name: `hunt-stop-${currentStopIndex}.jpg` } as any);
         if (currentHunt?._id) {
-          await api.patch(
-            `/hunts/${currentHunt._id}/stop/${currentStopIndex}/photo`,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } } as any,
-          );
+          await api.patch(`/hunts/${currentHunt._id}/stop/${currentStopIndex}/photo`, formData, { headers: { 'Content-Type': 'multipart/form-data' } } as any);
         }
-      } catch {
-        console.log('Photo upload to server failed, saved locally');
-      }
+      } catch {}
 
-      // Navigate
+      // Complete the stop via API
+      try {
+        if (currentHunt?._id) {
+          await api.patch(`/hunts/${currentHunt._id}/stop/${currentStopIndex}/complete`);
+        }
+      } catch {}
+
+      completeStop();
+
       if (isLastStop) {
+        if (currentHunt?._id) {
+          try { await api.patch(`/hunts/${currentHunt._id}/complete`); } catch {}
+        }
         router.replace('/(app)/finale');
       } else {
         router.replace('/(app)/live-map');
       }
-    } catch (err) {
-      Alert.alert('Error', 'Could not save photo. Try again.');
+    } catch {
+      Alert.alert('Error', 'Could not save photo.');
     } finally {
       setSaving(false);
     }
   }
 
-  function handleRetake() {
-    setPhoto(null);
-  }
-
   if (!permission) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.permText}>Checking camera permissions...</Text>
-      </View>
-    );
+    return <View style={styles.center}><Text style={styles.permText}>Checking camera...</Text></View>;
   }
 
   if (!permission.granted) {
@@ -123,40 +110,60 @@ export default function CameraScreen() {
       <View style={styles.center}>
         <Text style={styles.icon}>📸</Text>
         <Text style={styles.permTitle}>Camera Access Needed</Text>
-        <Text style={styles.permText}>We need camera access to capture your adventure moments!</Text>
+        <Text style={styles.permText}>We need camera access to capture your adventure moments and unlock AR characters!</Text>
         <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>Grant Permission</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.skipBtn} onPress={() => router.replace('/(app)/live-map')}>
-          <Text style={styles.skipText}>Skip Photo</Text>
+        <TouchableOpacity style={styles.skipBtn} onPress={() => {
+          if (isLastStop) router.replace('/(app)/finale');
+          else router.replace('/(app)/live-map');
+        }}>
+          <Text style={styles.skipText}>Skip Photo →</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // Show captured photo with AR overlay
   if (photo) {
     return (
       <View style={styles.container}>
         <View style={styles.photoContainer}>
           <Image source={{ uri: photo }} style={styles.photoPreview} resizeMode="cover" />
+
+          {/* AR character overlay */}
           <View style={styles.arOverlay}>
             <Text style={styles.arCharacter}>{charEmoji}</Text>
-            <Text style={styles.arText}>{charName} was hiding here!</Text>
+            <View style={styles.arBubble}>
+              <Text style={styles.arText}>{tagline}</Text>
+            </View>
           </View>
+
+          {/* Celebration overlay */}
+          {showCelebration && (
+            <View style={styles.celebrationOverlay}>
+              <Text style={styles.celebrationEmoji}>🎉</Text>
+              <Text style={styles.celebrationText}>Stop {currentStopIndex + 1} Complete!</Text>
+              <Text style={styles.celebrationSub}>{charName} found!</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Stop info */}
+        <View style={styles.stopInfo}>
+          <Text style={styles.stopInfoName}>{stop?.name || 'Adventure Stop'}</Text>
+          <Text style={styles.stopInfoMission}>✅ {stop?.missionTitle || 'Mission Complete'}</Text>
         </View>
 
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.retakeBtn} onPress={handleRetake}>
+          <TouchableOpacity style={styles.retakeBtn} onPress={() => setPhoto(null)}>
             <Text style={styles.retakeBtnText}>🔄 Retake</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-            onPress={handleSaveAndContinue}
-            disabled={saving}
+            onPress={handleSaveAndContinue} disabled={saving}
           >
             <Text style={styles.saveBtnText}>
-              {saving ? 'Saving...' : isLastStop ? '🎉 Save & Finish!' : '✅ Save & Continue'}
+              {saving ? 'Saving...' : isLastStop ? '🎉 Save & Finish!' : '✅ Save & Next Stop'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -164,22 +171,26 @@ export default function CameraScreen() {
     );
   }
 
-  // Camera viewfinder
   return (
     <View style={styles.container}>
       <CameraView ref={cameraRef} style={styles.camera} facing="back">
         <View style={styles.liveArOverlay}>
           <Text style={styles.liveArEmoji}>{charEmoji}</Text>
-          <Text style={styles.liveArHint}>Tap capture to snap {charName}!</Text>
+          <Text style={styles.liveArHint}>Find {charName} and tap capture!</Text>
         </View>
 
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.stopLabel}>
-            Stop {(currentStopIndex || 0) + 1}/{currentHunt?.stops?.length || '?'}
-          </Text>
+          <View style={styles.stopBadge}>
+            <Text style={styles.stopLabel}>Stop {(currentStopIndex || 0) + 1}/{currentHunt?.stops?.length || '?'}</Text>
+          </View>
+        </View>
+
+        {/* Mission reminder */}
+        <View style={styles.missionReminder}>
+          <Text style={styles.missionReminderText}>{stop?.missionTitle || 'Complete the mission!'}</Text>
         </View>
       </CameraView>
 
@@ -213,18 +224,29 @@ const styles = StyleSheet.create({
   topBar: { position: 'absolute', top: 60, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20 },
   backBtn: { backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   backText: { color: '#fff', fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
-  stopLabel: { backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, color: '#fff', fontFamily: 'Nunito_600SemiBold', fontSize: 14, overflow: 'hidden' },
-  liveArOverlay: { position: 'absolute', bottom: 120, left: 20, alignItems: 'center' },
+  stopBadge: { backgroundColor: Colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  stopLabel: { color: '#fff', fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
+  liveArOverlay: { position: 'absolute', bottom: 140, left: 20, alignItems: 'center' },
   liveArEmoji: { fontSize: 64, opacity: 0.7 },
   liveArHint: { color: '#fff', fontFamily: 'Nunito_400Regular', fontSize: 12, textShadowColor: '#000', textShadowRadius: 4, marginTop: 4 },
+  missionReminder: { position: 'absolute', bottom: 100, left: 20, right: 20, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
+  missionReminderText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: '#fff' },
   controls: { padding: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 20 },
   captureBtn: { width: 72, height: 72, borderRadius: 36, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   captureInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary },
   photoContainer: { flex: 1, position: 'relative' },
   photoPreview: { flex: 1 },
-  arOverlay: { position: 'absolute', bottom: 40, left: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  arCharacter: { fontSize: 40, marginRight: 10 },
-  arText: { color: '#fff', fontFamily: 'Fredoka_600SemiBold', fontSize: 16, textShadowColor: '#000', textShadowRadius: 6 },
+  arOverlay: { position: 'absolute', bottom: 80, left: 20, flexDirection: 'row', alignItems: 'flex-end' },
+  arCharacter: { fontSize: 56, marginRight: 8 },
+  arBubble: { backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, maxWidth: 200 },
+  arText: { color: '#fff', fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
+  celebrationOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(26,143,227,0.3)', justifyContent: 'center', alignItems: 'center' },
+  celebrationEmoji: { fontSize: 80 },
+  celebrationText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: '#fff', textShadowColor: '#000', textShadowRadius: 8, marginTop: 8 },
+  celebrationSub: { fontFamily: 'Nunito_600SemiBold', fontSize: 18, color: '#fff', textShadowColor: '#000', textShadowRadius: 4 },
+  stopInfo: { backgroundColor: '#111', paddingHorizontal: 20, paddingVertical: 8 },
+  stopInfoName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, color: '#fff' },
+  stopInfoMission: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.primaryLight },
   retakeBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 26 },
   retakeBtnText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 14, color: '#fff' },
   saveBtn: { backgroundColor: Colors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 26 },

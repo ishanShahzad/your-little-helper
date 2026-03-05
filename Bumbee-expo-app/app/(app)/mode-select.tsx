@@ -12,14 +12,12 @@ import api from '../../services/api';
 export default function ModeSelectScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const mood = useHuntStore((s) => s.mood);
+  const { mood, resetHunt } = useHuntStore();
   const setModal = useAppStore((s) => s.setModal);
   const [profile, setProfile] = useState<any>(null);
   const [birthdayKid, setBirthdayKid] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  useEffect(() => { loadProfile(); }, []);
 
   async function loadProfile() {
     try {
@@ -32,12 +30,19 @@ export default function ModeSelectScreen() {
         const dob = new Date(kid.dob);
         const thisYearBday = new Date(now.getFullYear(), dob.getMonth(), dob.getDate());
         const diffDays = Math.ceil((thisYearBday.getTime() - now.getTime()) / 86400000);
-        if (diffDays >= 0 && diffDays <= 7) {
-          setBirthdayKid(kid.name);
-          break;
-        }
+        if (diffDays >= 0 && diffDays <= 7) { setBirthdayKid(kid.name); break; }
       }
     } catch {}
+  }
+
+  function checkSubscriptionAndGo(path: string) {
+    if (profile && profile.subscription?.plan === 'free' && (profile.history?.length || 0) >= 1) {
+      setModal('subscriptionModalOpen', true);
+      return;
+    }
+    // Always reset hunt when starting a new one
+    resetHunt();
+    router.push(path as any);
   }
 
   async function handleOneTapRepeat() {
@@ -50,15 +55,9 @@ export default function ModeSelectScreen() {
         return;
       }
     } catch {}
+    // Reset and go to map — will generate fresh hunt
+    resetHunt();
     router.push('/(app)/live-map');
-  }
-
-  function checkSubscriptionAndGo(path: string) {
-    if (profile && profile.subscription?.plan === 'free' && (profile.history?.length || 0) >= 1) {
-      setModal('subscriptionModalOpen', true);
-      return;
-    }
-    router.push(path as any);
   }
 
   const streak = profile?.streaks?.currentStreak || 0;
@@ -71,7 +70,7 @@ export default function ModeSelectScreen() {
         <View style={styles.topRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.greeting}>Hi {user?.name || 'there'}! 👋</Text>
-            <Text style={styles.title}>What shall we do today?</Text>
+            <Text style={styles.title}>Ready for an adventure?</Text>
           </View>
           <TouchableOpacity onPress={() => setModal('badgeGalleryOpen', true)} style={styles.badgeBtn}>
             <Text style={styles.badgeIcon}>🏅</Text>
@@ -79,16 +78,13 @@ export default function ModeSelectScreen() {
         </View>
 
         {birthdayKid && (
-          <TouchableOpacity
-            style={styles.birthdayBanner}
-            onPress={() => {
-              Alert.alert('🎂 Birthday Hunt!', `Create a special birthday adventure for ${birthdayKid}?`, [
-                { text: 'Not now' },
-                { text: 'Yes!', onPress: () => checkSubscriptionAndGo('/(app)/hunt-prefs') },
-              ]);
-            }}
-          >
-            <Text style={styles.birthdayText}>🎂 {birthdayKid}'s birthday is coming! Create a special birthday hunt?</Text>
+          <TouchableOpacity style={styles.birthdayBanner} onPress={() => {
+            Alert.alert('🎂 Birthday Hunt!', `Create a special birthday adventure for ${birthdayKid}?`, [
+              { text: 'Not now' },
+              { text: 'Yes!', onPress: () => checkSubscriptionAndGo('/(app)/ages') },
+            ]);
+          }}>
+            <Text style={styles.birthdayText}>🎂 {birthdayKid}'s birthday is coming! Create a special hunt?</Text>
           </TouchableOpacity>
         )}
 
@@ -101,45 +97,62 @@ export default function ModeSelectScreen() {
           </View>
         )}
 
-        <TouchableOpacity onPress={() => checkSubscriptionAndGo('/(app)/hunt-prefs')} activeOpacity={0.7}>
+        {/* Main modes */}
+        <TouchableOpacity onPress={() => checkSubscriptionAndGo('/(app)/ages')} activeOpacity={0.7}>
           <BeeCard style={styles.modeCard}>
-            <Text style={styles.modeEmoji}>🗺️</Text>
-            <Text style={styles.modeTitle}>Scavenger Hunt</Text>
-            <Text style={styles.modeDesc}>Themed outdoor adventure with clues and AR photos</Text>
+            <View style={styles.modeIconContainer}>
+              <Text style={styles.modeEmoji}>🗺️</Text>
+            </View>
+            <View style={styles.modeTextContainer}>
+              <Text style={styles.modeTitle}>Scavenger Hunt</Text>
+              <Text style={styles.modeDesc}>Themed outdoor adventure with clues, missions, and AR characters</Text>
+              <View style={styles.modeSteps}>
+                <Text style={styles.stepChip}>Ages → Duration → Prefs → Theme → Go!</Text>
+              </View>
+            </View>
           </BeeCard>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => checkSubscriptionAndGo('/(app)/itinerary-setup')} activeOpacity={0.7}>
           <BeeCard style={styles.modeCard}>
-            <Text style={styles.modeEmoji}>📅</Text>
-            <Text style={styles.modeTitle}>Day Planner</Text>
-            <Text style={styles.modeDesc}>
-              {mood === 'rainy' || mood === 'sick' ? 'Indoor activities for the whole family' : 'Time-blocked outdoor itinerary'}
-            </Text>
+            <View style={styles.modeIconContainer}>
+              <Text style={styles.modeEmoji}>📅</Text>
+            </View>
+            <View style={styles.modeTextContainer}>
+              <Text style={styles.modeTitle}>Day Planner</Text>
+              <Text style={styles.modeDesc}>
+                {mood === 'rainy' || mood === 'sick' ? 'Indoor activities for the whole family' : 'Time-blocked family day itinerary'}
+              </Text>
+            </View>
           </BeeCard>
         </TouchableOpacity>
 
         {hasHistory && (
           <TouchableOpacity onPress={handleOneTapRepeat} style={styles.repeatBtn}>
-            <Text style={styles.repeatText}>🔄 One-Tap Repeat — re-run your last adventure with fresh stops!</Text>
+            <Text style={styles.repeatIcon}>🔄</Text>
+            <View>
+              <Text style={styles.repeatTitle}>One-Tap Repeat</Text>
+              <Text style={styles.repeatDesc}>Re-run your last adventure with fresh stops!</Text>
+            </View>
           </TouchableOpacity>
         )}
 
         <View style={styles.links}>
-          <TouchableOpacity onPress={() => router.push('/(app)/journal')}>
-            <Text style={styles.linkText}>📖 Family Journal</Text>
+          <TouchableOpacity onPress={() => router.push('/(app)/journal')} style={styles.linkItem}>
+            <Text style={styles.linkEmoji}>📖</Text>
+            <Text style={styles.linkText}>Journal</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setModal('feedbackModalOpen', true)}>
-            <Text style={styles.linkText}>📝 Give Feedback</Text>
+          <TouchableOpacity onPress={() => setModal('feedbackModalOpen', true)} style={styles.linkItem}>
+            <Text style={styles.linkEmoji}>📝</Text>
+            <Text style={styles.linkText}>Feedback</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setModal('referralModalOpen', true)}>
-            <Text style={styles.linkText}>🎁 Refer & Earn</Text>
+          <TouchableOpacity onPress={() => setModal('referralModalOpen', true)} style={styles.linkItem}>
+            <Text style={styles.linkEmoji}>🎁</Text>
+            <Text style={styles.linkText}>Refer</Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.bottomLinks}>
-          <TouchableOpacity onPress={() => router.push('/(app)/profile')}>
-            <Text style={styles.linkText}>👤 Profile</Text>
+          <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.linkItem}>
+            <Text style={styles.linkEmoji}>👤</Text>
+            <Text style={styles.linkText}>Profile</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -160,13 +173,20 @@ const styles = StyleSheet.create({
   streakBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.backgroundAlt, padding: 10, borderRadius: 12, marginBottom: 16, gap: 8 },
   streakText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.primary },
   latestBadge: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.text },
-  modeCard: { marginBottom: 16 },
-  modeEmoji: { fontSize: 40, marginBottom: 8 },
-  modeTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 4 },
-  modeDesc: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary },
-  repeatBtn: { backgroundColor: Colors.backgroundAlt, padding: 14, borderRadius: 12, marginBottom: 16, alignItems: 'center' },
-  repeatText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary, textAlign: 'center' },
-  links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
-  bottomLinks: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
-  linkText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary },
+  modeCard: { marginBottom: 16, flexDirection: 'row', alignItems: 'center' },
+  modeIconContainer: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.backgroundAlt, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  modeEmoji: { fontSize: 28 },
+  modeTextContainer: { flex: 1 },
+  modeTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 2 },
+  modeDesc: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary },
+  modeSteps: { marginTop: 6 },
+  stepChip: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.primary, backgroundColor: Colors.backgroundAlt, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+  repeatBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.backgroundAlt, padding: 16, borderRadius: 12, marginBottom: 16, gap: 12 },
+  repeatIcon: { fontSize: 28 },
+  repeatTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text },
+  repeatDesc: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary },
+  links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: Colors.border },
+  linkItem: { alignItems: 'center', gap: 4 },
+  linkEmoji: { fontSize: 22 },
+  linkText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.primary },
 });

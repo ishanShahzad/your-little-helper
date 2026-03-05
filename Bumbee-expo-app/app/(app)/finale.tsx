@@ -8,24 +8,18 @@ import { useAppStore } from '../../store/appStore';
 import { Colors } from '../../constants/colors';
 import api from '../../services/api';
 
-const finaleTypes = [
-  { emoji: '🏴‍☠️', text: 'Treasure Chest Revealed!' },
-  { emoji: '📜', text: 'Scroll of Achievement!' },
-  { emoji: '🏆', text: 'Golden Trophy!' },
-  { emoji: '🌀', text: 'Magical Portal!' },
-  { emoji: '🏕️', text: 'Secret Hideout Discovered!' },
-];
-
 export default function FinaleScreen() {
   const router = useRouter();
   const { currentHunt, resetHunt } = useHuntStore();
   const setModal = useAppStore((s) => s.setModal);
   const [recapLoading, setRecapLoading] = useState(false);
-  const finale = finaleTypes[Math.floor(Math.random() * finaleTypes.length)];
 
-  const stopsCompleted = currentHunt?.stops.filter((s) => s.completed).length || 0;
+  const stopsCompleted = currentHunt?.stops.filter((s) => s.completed).length || currentHunt?.stops.length || 0;
   const distKm = ((currentHunt?.route?.distance || 0) / 1000).toFixed(1);
   const giggles = Math.floor(Math.random() * 15) + 10;
+  const charEmoji = currentHunt?.storyCharacterEmoji || '🐝';
+  const charName = currentHunt?.storyCharacter || 'Bumbee';
+  const theme = currentHunt?.theme || 'explorer';
 
   async function handleCreateRecap() {
     if (!currentHunt) return;
@@ -33,11 +27,9 @@ export default function FinaleScreen() {
     try {
       const { data } = await api.post(`/hunts/${currentHunt._id}/recap`);
       if (data.data?.recapCardUrl) {
-        await Share.share({
-          message: `🐝 Check out our Bumbee adventure! ${data.data.recapCardUrl}`,
-        });
+        await Share.share({ message: `🐝 Check out our Bumbee adventure! ${data.data.recapCardUrl}` });
       } else {
-        Alert.alert('Recap Created!', 'Your adventure recap is ready to share.');
+        Alert.alert('Recap Created!', 'Your adventure recap is ready!');
       }
     } catch {
       Alert.alert('Error', 'Could not create recap card');
@@ -47,55 +39,107 @@ export default function FinaleScreen() {
   }
 
   async function handleSendToGrandparents() {
-    const message = `🐝 Hi from Bumbee!\n\nWe just completed a ${currentHunt?.theme || 'fun'} scavenger hunt!\n📍 ${stopsCompleted} stops visited\n🚶 ${distKm} km walked\n😄 ~${giggles} giggles estimated\n\nLove from the family! ❤️`;
-    try {
-      await Share.share({ message });
-    } catch {}
-  }
-
-  function handleChallengeAFriend() {
-    setModal('referralModalOpen', true);
+    const message = `🐝 Hi from Bumbee!\n\nWe just completed a ${theme} scavenger hunt with ${charName}!\n📍 ${stopsCompleted} stops visited\n🚶 ${distKm} km walked\n😄 ~${giggles} giggles estimated\n\nLove from the family! ❤️`;
+    try { await Share.share({ message }); } catch {}
   }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.celebration}>{finale.emoji}</Text>
-      <Text style={styles.title}>{finale.text}</Text>
-      <Text style={styles.subtitle}>Adventure Complete!</Text>
+      {/* Celebration header */}
+      <View style={styles.celebrationBg}>
+        <Text style={styles.bigEmoji}>{charEmoji}</Text>
+        <Text style={styles.title}>🏆 Treasure Found!</Text>
+        <Text style={styles.subtitle}>{charName}'s Adventure Complete!</Text>
+      </View>
 
-      <BeeCard style={styles.summaryCard}>
-        <Text style={styles.stat}>📍 {stopsCompleted} stops completed</Text>
-        <Text style={styles.stat}>🚶 {distKm} km walked</Text>
-        <Text style={styles.stat}>😄 ~{giggles} giggles estimated</Text>
-        <Text style={styles.stat}>⏱️ Great adventure time!</Text>
+      {/* Stats card */}
+      <BeeCard style={styles.statsCard}>
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{stopsCompleted}</Text>
+            <Text style={styles.statLabel}>Stops</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{distKm}km</Text>
+            <Text style={styles.statLabel}>Walked</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>~{giggles}</Text>
+            <Text style={styles.statLabel}>Giggles</Text>
+          </View>
+        </View>
       </BeeCard>
 
-      <BeeButton title="📸 Create Shareable Recap" onPress={handleCreateRecap} loading={recapLoading} style={styles.btn} />
+      {/* Photo collage placeholder */}
+      {currentHunt?.stops.some(s => s.photoUrl) && (
+        <BeeCard style={styles.photosCard}>
+          <Text style={styles.photosTitle}>📸 Your Adventure Photos</Text>
+          <View style={styles.photoGrid}>
+            {currentHunt.stops.filter(s => s.photoUrl).slice(0, 4).map((s, i) => (
+              <View key={i} style={styles.photoPlaceholder}>
+                <Text style={styles.photoEmoji}>🖼️</Text>
+                <Text style={styles.photoStopName}>{s.name}</Text>
+              </View>
+            ))}
+          </View>
+        </BeeCard>
+      )}
+
+      {/* Character message */}
+      <View style={styles.characterMsg}>
+        <Text style={styles.charEmoji}>{charEmoji}</Text>
+        <View style={styles.charBubble}>
+          <Text style={styles.charText}>"What an amazing adventure! You solved every clue and found the treasure! Until next time, adventurer!"</Text>
+          <Text style={styles.charName}>— {charName}</Text>
+        </View>
+      </View>
+
+      {/* Actions */}
+      <BeeButton title="📸 Create & Share Recap" onPress={handleCreateRecap} loading={recapLoading} style={styles.btn} />
       <BeeButton title="💌 Send to Grandparents" onPress={handleSendToGrandparents} variant="secondary" style={styles.btn} />
-      <BeeButton title="⭐ Rate This Hunt" onPress={() => router.push('/(app)/rating')} style={styles.btn} />
+      <BeeButton title="⭐ Rate This Hunt" onPress={() => router.push('/(app)/rating')} variant="secondary" style={styles.btn} />
 
       <View style={styles.secondaryActions}>
-        <Text style={styles.challengeLink} onPress={handleChallengeAFriend}>🎁 Challenge a Friend</Text>
+        <Text style={styles.challengeLink} onPress={() => setModal('referralModalOpen', true)}>🎁 Challenge a Friend</Text>
       </View>
 
       <BeeButton
         title="🏠 Back to Home"
         onPress={() => { resetHunt(); router.replace('/(app)/mode-select'); }}
         variant="secondary"
-        style={styles.btn}
+        style={styles.homeBtn}
       />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
-  celebration: { fontSize: 80, marginBottom: 16 },
-  title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24, color: Colors.primary, textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontFamily: 'Nunito_600SemiBold', fontSize: 18, color: Colors.text, marginBottom: 24 },
-  summaryCard: { width: '100%', marginBottom: 24 },
-  stat: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.text, marginBottom: 8 },
-  btn: { width: '100%', marginBottom: 12 },
-  secondaryActions: { alignItems: 'center', marginBottom: 16 },
+  container: { flexGrow: 1, padding: 24, backgroundColor: Colors.background },
+  celebrationBg: { alignItems: 'center', backgroundColor: Colors.backgroundAlt, borderRadius: 20, padding: 32, marginBottom: 20 },
+  bigEmoji: { fontSize: 72, marginBottom: 8 },
+  title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: Colors.primary, textAlign: 'center', marginBottom: 4 },
+  subtitle: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.text },
+  statsCard: { marginBottom: 16 },
+  statsRow: { flexDirection: 'row', alignItems: 'center' },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24, color: Colors.primary },
+  statLabel: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 2 },
+  statDivider: { width: 1, height: 32, backgroundColor: Colors.border },
+  photosCard: { marginBottom: 16 },
+  photosTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text, marginBottom: 8 },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  photoPlaceholder: { width: '48%', aspectRatio: 1, backgroundColor: Colors.backgroundAlt, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  photoEmoji: { fontSize: 32 },
+  photoStopName: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: Colors.secondary, marginTop: 4 },
+  characterMsg: { flexDirection: 'row', marginBottom: 20 },
+  charEmoji: { fontSize: 40, marginRight: 12 },
+  charBubble: { flex: 1, backgroundColor: Colors.backgroundAlt, borderRadius: 16, padding: 14, borderTopLeftRadius: 4 },
+  charText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.text, fontStyle: 'italic', lineHeight: 20 },
+  charName: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.primary, marginTop: 4 },
+  btn: { width: '100%', marginBottom: 10 },
+  secondaryActions: { alignItems: 'center', marginBottom: 12 },
   challengeLink: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary },
+  homeBtn: { width: '100%', marginBottom: 40 },
 });
