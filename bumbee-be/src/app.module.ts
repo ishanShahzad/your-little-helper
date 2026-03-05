@@ -1,10 +1,36 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { HuntsModule } from './hunts/hunts.module';
+import { ItinerariesModule } from './itineraries/itineraries.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { NearbyModule } from './nearby/nearby.module';
+import { ReferralsModule } from './referrals/referrals.module';
+import { FeedbackModule } from './feedback/feedback.module';
+import { CronModule } from './cron/cron.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => ({ uri: cfg.get('MONGODB_URI') }),
+    }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ScheduleModule.forRoot(),
+    AuthModule,
+    UsersModule,
+    HuntsModule,
+    ItinerariesModule,
+    SubscriptionsModule,
+    NearbyModule,
+    ReferralsModule,
+    FeedbackModule,
+    CronModule,
+  ],
 })
 export class AppModule {}
