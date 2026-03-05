@@ -38,6 +38,12 @@ export class HuntsController {
     return { success: true, data };
   }
 
+  @Patch(':id/track')
+  async saveTrack(@Param('id') id: string, @Body() body: { walkedPath: { lat: number; lng: number }[] }) {
+    const data = await this.huntsService.saveTrack(id, body.walkedPath);
+    return { success: true, data };
+  }
+
   @Patch(':id/complete')
   async completeHunt(@Req() req: any, @Param('id') id: string) {
     const data = await this.huntsService.completeHunt(req.user.userId, id);

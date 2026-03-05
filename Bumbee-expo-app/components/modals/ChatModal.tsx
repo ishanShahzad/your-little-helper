@@ -1,80 +1,129 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { BeeModal } from '../BeeModal';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../store/authStore';
 import { Colors } from '../../constants/colors';
-
-const cannedResponses = [
-  'Sounds fun! 🎉',
-  'Which area are you in? 🗺️',
-  'Our kids would love that! 😄',
-  'Have a great adventure! 🐝',
-  'We love this spot too! ⭐',
-];
+import { connectChatSocket, disconnectChatSocket, getChatSocket } from '../../services/socket';
 
 interface Message {
   id: string;
+  _id?: string;
   content: string;
   sender: 'me' | 'other';
+  senderName?: string;
   timestamp: Date;
 }
 
 export function ChatModal() {
   const visible = useAppStore((s) => s.chatModalOpen);
+  const chatRoomId = useAppStore((s) => (s as any).chatRoomId) || null;
   const setModal = useAppStore((s) => s.setModal);
   const user = useAuthStore((s) => s.user);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    if (visible) {
-      // In production, connect socket.io here:
-      // const socket = io(`${API_URL}/chat`, { auth: { token: accessToken } });
-      // socket.emit('joinRoom', { roomId });
-      // socket.on('newMessage', (msg) => setMessages(prev => [...prev, msg]));
-      setMessages([{
-        id: '0',
-        content: '👋 Connected! Say hello to a nearby family.',
-        sender: 'other',
-        timestamp: new Date(),
-      }]);
-    }
-  }, [visible]);
+    if (!visible || !chatRoomId) return;
+
+    let mounted = true;
+    setConnecting(true);
+
+    connectChatSocket(chatRoomId)
+      .then((socket) => {
+        if (!mounted) return;
+        setConnected(true);
+        setConnecting(false);
+
+        setMessages([{
+          id: 'system-0',
+          content: '👋 Connected! Say hello to a nearby family.',
+          sender: 'other',
+          timestamp: new Date(),
+        }]);
+
+        socket.on('newMessage', (msg: any) => {
+          if (!mounted) return;
+          const isMe = msg.senderId === user?.id;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: msg._id || Date.now().toString(),
+              content: msg.content,
+              sender: isMe ? 'me' : 'other',
+              senderName: msg.senderName,
+              timestamp: new Date(msg.createdAt || Date.now()),
+            },
+          ]);
+        });
+
+        socket.on('disconnect', () => {
+          if (mounted) setConnected(false);
+        });
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setConnecting(false);
+        setMessages([{
+          id: 'error-0',
+          content: '⚠️ Could not connect. Please try again later.',
+          sender: 'other',
+          timestamp: new Date(),
+        }]);
+      });
+
+    return () => {
+      mounted = false;
+      disconnectChatSocket(chatRoomId);
+      setConnected(false);
+      setMessages([]);
+    };
+  }, [visible, chatRoomId]);
 
   function sendMessage() {
-    if (!input.trim()) return;
-    const newMsg: Message = {
-      id: Date.now().toString(),
-      content: input.trim(),
-      sender: 'me',
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    setInput('');
+    if (!input.trim() || !connected) return;
+    const socket = getChatSocket();
+    if (!socket) return;
 
-    // Auto-reply after 2 seconds (placeholder for real socket.io)
-    setTimeout(() => {
-      const reply: Message = {
-        id: (Date.now() + 1).toString(),
-        content: cannedResponses[Math.floor(Math.random() * cannedResponses.length)],
-        sender: 'other',
+    socket.emit('sendMessage', {
+      roomId: chatRoomId,
+      content: input.trim(),
+      senderName: user?.name || 'Bumbee Family',
+    });
+
+    // Optimistically add the message locally
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        content: input.trim(),
+        sender: 'me',
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, reply]);
-    }, 2000);
+      },
+    ]);
+    setInput('');
   }
 
   function handleEndChat() {
-    // In production: socket.emit('leaveRoom', { roomId }); socket.disconnect();
+    disconnectChatSocket(chatRoomId || undefined);
     setMessages([]);
+    setConnected(false);
     setModal('chatModalOpen', false);
   }
 
   return (
     <BeeModal visible={visible} onClose={handleEndChat} title="Family Chat 💬">
       <Text style={styles.privacy}>🔒 Chatting with a verified Bumbee family</Text>
+
+      {connecting && (
+        <View style={styles.connectingRow}>
+          <ActivityIndicator color={Colors.primary} size="small" />
+          <Text style={styles.connectingText}>Connecting...</Text>
+        </View>
+      )}
 
       <FlatList
         ref={flatListRef}
@@ -84,6 +133,9 @@ export function ChatModal() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
         renderItem={({ item }) => (
           <View style={[styles.bubble, item.sender === 'me' ? styles.myBubble : styles.otherBubble]}>
+            {item.sender === 'other' && item.senderName && (
+              <Text style={styles.senderName}>{item.senderName}</Text>
+            )}
             <Text style={[styles.bubbleText, item.sender === 'me' && styles.myBubbleText]}>{item.content}</Text>
           </View>
         )}
@@ -95,12 +147,17 @@ export function ChatModal() {
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Type a message..."
+            placeholder={connected ? 'Type a message...' : 'Connecting...'}
             placeholderTextColor={Colors.secondary}
             onSubmitEditing={sendMessage}
             returnKeyType="send"
+            editable={connected}
           />
-          <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
+          <TouchableOpacity
+            style={[styles.sendBtn, !connected && { opacity: 0.5 }]}
+            onPress={sendMessage}
+            disabled={!connected}
+          >
             <Text style={styles.sendText}>Send</Text>
           </TouchableOpacity>
         </View>
@@ -115,10 +172,13 @@ export function ChatModal() {
 
 const styles = StyleSheet.create({
   privacy: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.secondary, textAlign: 'center', marginBottom: 8, backgroundColor: '#FFF5E0', padding: 6, borderRadius: 6 },
+  connectingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 },
+  connectingText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary },
   chatList: { maxHeight: 300, marginBottom: 12 },
   bubble: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, marginBottom: 6, maxWidth: '80%' },
   myBubble: { backgroundColor: Colors.primary, alignSelf: 'flex-end', borderBottomRightRadius: 4 },
   otherBubble: { backgroundColor: Colors.white, alignSelf: 'flex-start', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
+  senderName: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: Colors.secondary, marginBottom: 2 },
   bubbleText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.text },
   myBubbleText: { color: '#fff' },
   inputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },

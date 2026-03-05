@@ -32,6 +32,8 @@ export class Hunt {
   @Prop() feedbackText: string;
   @Prop() wouldRecommend: boolean;
   @Prop() recapCardUrl: string;
+  @Prop({ type: [{ lat: Number, lng: Number }], default: [] })
+  walkedPath: { lat: number; lng: number }[];
 }
 
 export const HuntSchema = SchemaFactory.createForClass(Hunt);

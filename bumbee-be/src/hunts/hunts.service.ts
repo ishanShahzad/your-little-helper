@@ -143,6 +143,14 @@ export class HuntsService {
     return this.huntModel.findById(id).lean();
   }
 
+  async saveTrack(huntId: string, walkedPath: { lat: number; lng: number }[]) {
+    return this.huntModel.findByIdAndUpdate(
+      huntId,
+      { $set: { walkedPath } },
+      { new: true },
+    ).lean();
+  }
+
   async completeStop(huntId: string, stopIndex: number) {
     const update: any = {};
     update[`stops.${stopIndex}.completed`] = true;
