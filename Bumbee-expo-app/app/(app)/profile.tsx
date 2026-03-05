@@ -42,7 +42,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.name}>{user?.name || profile?.name}</Text>
         <Text style={styles.email}>{user?.email || profile?.email}</Text>
-        <Text style={styles.badge}>
+        <Text style={styles.planBadge}>
           {profile?.subscription?.plan === 'free' ? '🆓 Free' : profile?.subscription?.plan === 'monthly' ? '💎 Monthly' : '👑 Annual'}
         </Text>
 
@@ -60,7 +60,7 @@ export default function ProfileScreen() {
           <Text style={styles.streakText}>Current Streak: {profile?.streaks?.currentStreak || 0} weekends</Text>
           <Text style={styles.streakText}>Total Weekends: {profile?.streaks?.weekendsPlanned || 0}</Text>
           {(profile?.streaks?.badges || []).map((b: string, i: number) => (
-            <Text key={i} style={styles.badge}>{b}</Text>
+            <Text key={i} style={styles.badgeText}>{b}</Text>
           ))}
         </BeeCard>
 
@@ -79,16 +79,17 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.white },
   content: { padding: 24 },
   name: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: Colors.text, textAlign: 'center' },
   email: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary, textAlign: 'center', marginBottom: 4 },
-  badge: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary, textAlign: 'center', marginBottom: 16 },
+  planBadge: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary, textAlign: 'center', marginBottom: 16 },
   section: { marginBottom: 16 },
   sectionTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text, marginBottom: 8 },
   kidText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.text, marginBottom: 4 },
   streakText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.text, marginBottom: 4 },
-  referralCode: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24, color: Colors.primary, textAlign: 'center', paddingVertical: 12, backgroundColor: '#FFF5E0', borderRadius: 12 },
+  badgeText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary },
+  referralCode: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24, color: Colors.primary, textAlign: 'center', paddingVertical: 12, backgroundColor: Colors.backgroundAlt, borderRadius: 12 },
   referralHint: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, textAlign: 'center', marginTop: 8 },
   logoutBtn: { marginTop: 24 },
 });

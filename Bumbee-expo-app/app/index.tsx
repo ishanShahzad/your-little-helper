@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
 import { Colors } from '../constants/colors';
@@ -17,17 +17,17 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.bee}>🐝</Text>
+      <Image source={require('../assets/bumbee-logo.png')} style={styles.logo} />
       <Text style={styles.title}>Bumbee</Text>
       <Text style={styles.tagline}>Family adventures, made magical</Text>
-      <Text style={styles.footer}>© 2025 Bumbee Ltd. All rights reserved.</Text>
+      <Text style={styles.footer}>© 2025 Bumbee. All rights reserved.</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  bee: { fontSize: 80, marginBottom: 16 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.white },
+  logo: { width: 120, height: 120, borderRadius: 24, marginBottom: 16 },
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 40, color: Colors.primary, marginBottom: 8 },
   tagline: { fontFamily: 'Nunito_400Regular', fontSize: 18, color: Colors.secondary },
   footer: { position: 'absolute', bottom: 40, fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Switch } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Alert, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BeeInput } from '../../components/BeeInput';
 import { BeeButton } from '../../components/BeeButton';
@@ -21,21 +21,21 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   async function handleRegister() {
-    if (!name || !email || !dob || !password) return Alert.alert('Error', 'Please fill in all required fields');
-    if (!agreedTerms) return Alert.alert('Error', 'You must agree to Terms & Privacy Policy');
+    if (!name || !email || !dob || !password) return Alert.alert('Oops!', 'Please fill in all required fields');
+    if (!agreedTerms) return Alert.alert('One more thing', 'You need to agree to our Terms & Privacy Policy');
 
     const dobDate = new Date(dob);
     const age = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-    if (age < 12) return Alert.alert('Age Requirement', 'You must be at least 12 years old to use Bumbee');
+    if (age < 12) return Alert.alert('Age Requirement', 'You must be at least 12 years old to use the Bumbee app');
 
     setLoading(true);
     try {
       const { data } = await api.post('/auth/register', { name, email, dob, password, referralCode: referralCode || undefined });
-      Alert.alert('Welcome! 🐝', `Your referral code is: ${data.data.user.referralCode}\nShare it with friends!`);
+      Alert.alert('You\'re all set! 🐝', `Your referral code is: ${data.data.user.referralCode}\nShare it with friends!`);
       await login({ accessToken: data.data.accessToken, refreshToken: data.data.refreshToken }, data.data.user);
       router.replace('/(app)/ages');
     } catch (err: any) {
-      Alert.alert('Registration Failed', err.response?.data?.message || 'Something went wrong');
+      Alert.alert('Something went wrong', err.response?.data?.message || "Let's fix that together.");
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function RegisterScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.bee}>🐝</Text>
+      <Image source={require('../../assets/bumbee-logo.png')} style={styles.logo} />
       <Text style={styles.title}>Join Bumbee!</Text>
       <Text style={styles.subtitle}>Create magical family adventures</Text>
 
@@ -73,8 +73,8 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, paddingTop: 60, backgroundColor: Colors.background },
-  bee: { fontSize: 48, textAlign: 'center', marginBottom: 8 },
+  container: { flexGrow: 1, padding: 24, paddingTop: 60, backgroundColor: Colors.white },
+  logo: { width: 80, height: 80, borderRadius: 16, alignSelf: 'center', marginBottom: 16 },
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: Colors.text, textAlign: 'center', marginBottom: 4 },
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.secondary, textAlign: 'center', marginBottom: 24 },
   termsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },

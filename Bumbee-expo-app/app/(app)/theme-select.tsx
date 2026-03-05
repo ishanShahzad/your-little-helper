@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
   themeName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: Colors.text },
   character: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary },
   desc: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary },
-  favBadge: { backgroundColor: '#FFF5E0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginTop: 4, alignSelf: 'flex-start' },
+  favBadge: { backgroundColor: Colors.backgroundAlt, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginTop: 4, alignSelf: 'flex-start' },
   favText: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: Colors.primary },
 });

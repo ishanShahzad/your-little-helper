@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 
-// Import modals (Nearby + Chat commented out)
 import { SubscriptionModal } from '../../components/modals/SubscriptionModal';
 import { TermsModal } from '../../components/modals/TermsModal';
 import { PrivacyModal } from '../../components/modals/PrivacyModal';
@@ -24,14 +23,12 @@ export default function AppLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFBF0' } }} />
-      {/* Global modals */}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }} />
       <SubscriptionModal />
       <TermsModal />
       <PrivacyModal />
       <BadgeGalleryModal />
       <ReferralModal />
-      {/* Nearby Families — commented out for now */}
       {/* <NearbyModal /> */}
       {/* <ChatModal /> */}
       <FeedbackModal />

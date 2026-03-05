@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 16,
     color: Colors.text,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.backgroundAlt,
   },
   inputError: { borderColor: Colors.error },
   error: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.error, marginTop: 4 },

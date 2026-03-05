@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BeeInput } from '../../components/BeeInput';
 import { BeeButton } from '../../components/BeeButton';
@@ -17,14 +17,14 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
-    if (!email || !password) return Alert.alert('Error', 'Please fill in all fields');
+    if (!email || !password) return Alert.alert('Oops!', 'Please fill in all fields');
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
       await login({ accessToken: data.data.accessToken, refreshToken: data.data.refreshToken }, data.data.user);
       router.replace('/(app)/ages');
     } catch (err: any) {
-      Alert.alert('Login Failed', err.response?.data?.message || 'Invalid credentials');
+      Alert.alert('Something went wrong', err.response?.data?.message || "Let's fix that together.");
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ export default function LoginScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.bee}>🐝</Text>
+      <Image source={require('../../assets/bumbee-logo.png')} style={styles.logo} />
       <Text style={styles.title}>Welcome back!</Text>
       <Text style={styles.subtitle}>Sign in to your Bumbee account</Text>
 
@@ -71,8 +71,8 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, justifyContent: 'center', backgroundColor: Colors.background },
-  bee: { fontSize: 48, textAlign: 'center', marginBottom: 8 },
+  container: { flexGrow: 1, padding: 24, justifyContent: 'center', backgroundColor: Colors.white },
+  logo: { width: 80, height: 80, borderRadius: 16, alignSelf: 'center', marginBottom: 16 },
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: Colors.text, textAlign: 'center', marginBottom: 4 },
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.secondary, textAlign: 'center', marginBottom: 32 },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
