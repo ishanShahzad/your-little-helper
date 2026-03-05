@@ -1,13 +1,16 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, AppState } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Alert, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import MapView, { Marker, Polyline, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { BeeHeader } from '../../components/BeeHeader';
 import { BeeButton } from '../../components/BeeButton';
 import { BeeLoader } from '../../components/BeeLoader';
 import { useHuntStore } from '../../store/huntStore';
 import { Colors } from '../../constants/colors';
 import api from '../../services/api';
+
+const { width, height } = Dimensions.get('window');
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -26,14 +29,41 @@ export default function LiveMapScreen() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [distToStop, setDistToStop] = useState<number | null>(null);
   const [arrived, setArrived] = useState(false);
+  const [walkedPath, setWalkedPath] = useState<{ latitude: number; longitude: number }[]>([]);
   const locationSub = useRef<Location.LocationSubscription | null>(null);
+  const mapRef = useRef<MapView | null>(null);
+  const arrivedRef = useRef(false);
+
+  useEffect(() => {
+    arrivedRef.current = arrived;
+  }, [arrived]);
 
   useEffect(() => {
     startHunt();
     return () => {
       locationSub.current?.remove();
+      // Save walked path to backend when leaving
+      saveTrack();
     };
   }, []);
+
+  // Reset arrived flag when stop changes
+  useEffect(() => {
+    setArrived(false);
+    arrivedRef.current = false;
+  }, [currentStopIndex]);
+
+  async function saveTrack() {
+    const hunt = useHuntStore.getState().currentHunt;
+    if (!hunt || walkedPath.length < 2) return;
+    try {
+      await api.patch(`/hunts/${hunt._id}/track`, {
+        walkedPath: walkedPath.map((p) => ({ lat: p.latitude, lng: p.longitude })),
+      });
+    } catch {
+      // silent — track saving is best-effort
+    }
+  }
 
   async function startHunt() {
     if (currentHunt) {
@@ -75,6 +105,9 @@ export default function LiveMapScreen() {
           const userLng = loc.coords.longitude;
           setLocation({ lat: userLat, lng: userLng });
 
+          // Record walked path
+          setWalkedPath((prev) => [...prev, { latitude: userLat, longitude: userLng }]);
+
           // Calculate distance to current stop
           const hunt = useHuntStore.getState().currentHunt;
           const idx = useHuntStore.getState().currentStopIndex;
@@ -83,7 +116,8 @@ export default function LiveMapScreen() {
             const dist = haversineDistance(userLat, userLng, stop.lat, stop.lng);
             setDistToStop(Math.round(dist));
 
-            if (dist < 50 && !arrived) {
+            if (dist < 50 && !arrivedRef.current) {
+              arrivedRef.current = true;
               setArrived(true);
               Alert.alert('🎉 You\'re here!', `You arrived at ${stop.name}!`, [
                 { text: '📸 Take Photo', onPress: () => handleCompleteStop() },
@@ -97,17 +131,35 @@ export default function LiveMapScreen() {
     }
   }
 
+  const getStopMarkerColor = useCallback((index: number) => {
+    if (index < currentStopIndex) return Colors.green;
+    if (index === currentStopIndex) return Colors.primary;
+    return Colors.grey;
+  }, [currentStopIndex]);
+
   if (loading) return <BeeLoader message="Finding adventure spots nearby..." />;
   if (!currentHunt) return <BeeLoader message="Loading..." />;
 
   const stop = currentHunt.stops[currentStopIndex];
   const isLastStop = currentStopIndex >= currentHunt.stops.length - 1;
 
+  // Route polyline from stop coordinates
+  const routeCoords = currentHunt.stops.map((s) => ({ latitude: s.lat, longitude: s.lng }));
+
+  // Initial map region centered on user or first stop
+  const initialRegion = {
+    latitude: location?.lat || currentHunt.stops[0]?.lat || 0,
+    longitude: location?.lng || currentHunt.stops[0]?.lng || 0,
+    latitudeDelta: 0.015,
+    longitudeDelta: 0.015,
+  };
+
   async function handleCompleteStop() {
     try {
       await api.patch(`/hunts/${currentHunt!._id}/stop/${currentStopIndex}/complete`);
       completeStop();
       if (isLastStop) {
+        await saveTrack();
         await api.patch(`/hunts/${currentHunt!._id}/complete`);
         router.push('/(app)/finale');
       } else {
@@ -124,8 +176,9 @@ export default function LiveMapScreen() {
       {
         text: 'Abandon',
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
           locationSub.current?.remove();
+          await saveTrack();
           router.replace('/(app)/mode-select');
         },
       },
@@ -136,37 +189,74 @@ export default function LiveMapScreen() {
     <View style={styles.container}>
       <BeeHeader title={`Stop ${currentStopIndex + 1}/${currentHunt.stops.length}`} />
 
-      <View style={styles.mapPlaceholder}>
-        <Text style={styles.mapText}>🗺️</Text>
-        <Text style={styles.mapLabel}>Map View</Text>
-        <Text style={styles.mapSubtext}>Full map requires react-native-maps native build</Text>
-
-        {/* Stop indicators */}
-        <View style={styles.stopsRow}>
-          {currentHunt.stops.map((s, i) => (
-            <View
-              key={i}
-              style={[
-                styles.stopDot,
-                i < currentStopIndex && styles.stopCompleted,
-                i === currentStopIndex && styles.stopCurrent,
-                i > currentStopIndex && styles.stopLocked,
-              ]}
-            >
-              <Text style={styles.stopDotText}>
-                {i < currentStopIndex ? '✅' : i === currentStopIndex ? '📍' : '🔒'}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {distToStop !== null && (
-          <View style={styles.distBadge}>
-            <Text style={styles.distText}>{distToStop}m away</Text>
-          </View>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={initialRegion}
+        showsUserLocation={false}
+        showsMyLocationButton={false}
+        showsCompass
+      >
+        {/* User location blue pulsing dot */}
+        {location && (
+          <>
+            <Circle
+              center={{ latitude: location.lat, longitude: location.lng }}
+              radius={12}
+              fillColor="rgba(66,133,244,0.3)"
+              strokeColor="rgba(66,133,244,0.6)"
+              strokeWidth={1}
+            />
+            <Circle
+              center={{ latitude: location.lat, longitude: location.lng }}
+              radius={5}
+              fillColor="#4285F4"
+              strokeColor="#fff"
+              strokeWidth={2}
+            />
+          </>
         )}
-      </View>
 
+        {/* Stop markers */}
+        {currentHunt.stops.map((s, i) => (
+          <Marker
+            key={i}
+            coordinate={{ latitude: s.lat, longitude: s.lng }}
+            title={i < currentStopIndex ? `✅ ${s.name}` : i === currentStopIndex ? `📍 ${s.name}` : `🔒 ${s.name}`}
+            description={i === currentStopIndex ? s.clue : undefined}
+            pinColor={getStopMarkerColor(i)}
+          />
+        ))}
+
+        {/* Planned route polyline (gold) */}
+        {routeCoords.length >= 2 && (
+          <Polyline
+            coordinates={routeCoords}
+            strokeColor={Colors.primary}
+            strokeWidth={4}
+            lineDashPattern={[8, 4]}
+          />
+        )}
+
+        {/* Walked path polyline (green) */}
+        {walkedPath.length >= 2 && (
+          <Polyline
+            coordinates={walkedPath}
+            strokeColor={Colors.green}
+            strokeWidth={3}
+          />
+        )}
+      </MapView>
+
+      {/* Distance badge */}
+      {distToStop !== null && (
+        <View style={styles.distBadge}>
+          <Text style={styles.distText}>{distToStop}m away</Text>
+        </View>
+      )}
+
+      {/* Bottom panel */}
       <View style={styles.panel}>
         <Text style={styles.stopName}>{stop?.name || 'Next Stop'}</Text>
         <Text style={styles.clue}>{stop?.clue}</Text>
@@ -187,17 +277,8 @@ export default function LiveMapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  mapPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8D8B8' },
-  mapText: { fontSize: 64 },
-  mapLabel: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: Colors.text, marginTop: 8 },
-  mapSubtext: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 4 },
-  stopsRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  stopDot: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  stopCompleted: { backgroundColor: Colors.green },
-  stopCurrent: { backgroundColor: Colors.primary },
-  stopLocked: { backgroundColor: Colors.grey },
-  stopDotText: { fontSize: 18 },
-  distBadge: { position: 'absolute', top: 16, right: 16, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  map: { flex: 1 },
+  distBadge: { position: 'absolute', top: 100, right: 16, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   distText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: '#fff' },
   panel: { padding: 24, backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8 },
   stopName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 8 },
