@@ -4,12 +4,14 @@ import { useRouter } from 'expo-router';
 import { BeeInput } from '../../components/BeeInput';
 import { BeeButton } from '../../components/BeeButton';
 import { useAuthStore } from '../../store/authStore';
+import { useAppStore } from '../../store/appStore';
 import { Colors } from '../../constants/colors';
 import api from '../../services/api';
 
 export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const setModal = useAppStore((s) => s.setModal);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,16 @@ export default function LoginScreen() {
       <TouchableOpacity onPress={() => router.push('/(auth)/register')} style={styles.link}>
         <Text style={styles.linkText}>Don't have an account? <Text style={styles.linkBold}>Sign up</Text></Text>
       </TouchableOpacity>
+
+      <View style={styles.legal}>
+        <TouchableOpacity onPress={() => setModal('termsModalOpen', true)}>
+          <Text style={styles.legalLink}>Terms of Service</Text>
+        </TouchableOpacity>
+        <Text style={styles.legalDot}> · </Text>
+        <TouchableOpacity onPress={() => setModal('privacyModalOpen', true)}>
+          <Text style={styles.legalLink}>Privacy Policy</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -69,4 +81,7 @@ const styles = StyleSheet.create({
   link: { marginTop: 24, alignItems: 'center' },
   linkText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary },
   linkBold: { fontFamily: 'Nunito_600SemiBold', color: Colors.primary },
+  legal: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  legalLink: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.primary, textDecorationLine: 'underline' },
+  legalDot: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary },
 });
