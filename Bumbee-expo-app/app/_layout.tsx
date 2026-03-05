@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import * as Camera from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import { useAuthStore } from '../store/authStore';
+import { Alert } from 'react-native';
 
 const queryClient = new QueryClient();
 
@@ -20,10 +21,34 @@ export default function RootLayout() {
   }, []);
 
   async function requestPermissions() {
-    await Location.requestForegroundPermissionsAsync();
-    await Location.requestBackgroundPermissionsAsync();
-    await Camera.requestCameraPermissionsAsync();
-    await MediaLibrary.requestPermissionsAsync();
+    try {
+      // Request location permissions
+      const locationForeground = await Location.requestForegroundPermissionsAsync();
+      if (locationForeground.status !== 'granted') {
+        Alert.alert('Permission needed', 'Location permission is required for this app to work properly.');
+      }
+
+      // Background location only works in development builds, not Expo Go
+      try {
+        await Location.requestBackgroundPermissionsAsync();
+      } catch (e) {
+        console.log('Background location not available in Expo Go');
+      }
+
+      // Request camera permissions
+      const cameraPermission = await Camera.requestCameraPermissionsAsync();
+      if (cameraPermission.status !== 'granted') {
+        console.log('Camera permission denied');
+      }
+
+      // Request media library permissions
+      const mediaPermission = await MediaLibrary.requestPermissionsAsync();
+      if (mediaPermission.status !== 'granted') {
+        console.log('Media library permission denied');
+      }
+    } catch (error) {
+      console.log('Permission request error:', error);
+    }
   }
 
   if (!fontsLoaded) return null;

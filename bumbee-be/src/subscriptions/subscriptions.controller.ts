@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, Req, UseGuards, RawBodyRequest, Headers } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, Headers } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SubscriptionsService } from './subscriptions.service';
 import { Request } from 'express';
