@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24, color: Colors.text, marginBottom: 20 },
   sectionTitle: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.text, marginBottom: 12, marginTop: 8 },
   optionCard: { marginBottom: 8, padding: 14 },
-  selectedCard: { borderColor: Colors.primary, backgroundColor: '#FFF5E0' },
+  selectedCard: { borderColor: Colors.primary, backgroundColor: Colors.backgroundAlt },
   optionText: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.text },
   toggleRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   toggleBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center' },

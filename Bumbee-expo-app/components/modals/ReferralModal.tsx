@@ -55,7 +55,7 @@ export function ReferralModal() {
 
 const styles = StyleSheet.create({
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary, textAlign: 'center', marginBottom: 16 },
-  codeBox: { backgroundColor: '#FFF5E0', padding: 20, borderRadius: 16, alignItems: 'center', marginBottom: 16 },
+  codeBox: { backgroundColor: Colors.backgroundAlt, padding: 20, borderRadius: 12, alignItems: 'center', marginBottom: 16 },
   code: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: Colors.primary },
   tapHint: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 4 },
   reward: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.text, marginBottom: 4 },

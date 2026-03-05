@@ -71,6 +71,6 @@ const styles = StyleSheet.create({
   badgeDesc: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, textAlign: 'center', marginTop: 2 },
   earnedText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.green, marginTop: 6 },
   remaining: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 6 },
-  cta: { backgroundColor: '#FFF5E0', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 20 },
+  cta: { backgroundColor: Colors.backgroundAlt, padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 20 },
   ctaText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary },
 });

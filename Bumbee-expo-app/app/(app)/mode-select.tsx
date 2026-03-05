@@ -25,7 +25,6 @@ export default function ModeSelectScreen() {
     try {
       const { data } = await api.get('/users/me');
       setProfile(data.data);
-      // Birthday detection
       const kids = data.data?.familyProfile?.kids || [];
       const now = new Date();
       for (const kid of kids) {
@@ -79,7 +78,6 @@ export default function ModeSelectScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Birthday banner */}
         {birthdayKid && (
           <TouchableOpacity
             style={styles.birthdayBanner}
@@ -94,7 +92,6 @@ export default function ModeSelectScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Streak bar */}
         {streak > 0 && (
           <View style={styles.streakBar}>
             <Text style={styles.streakText}>🔥 {streak} Weekend Streak!</Text>
@@ -122,7 +119,6 @@ export default function ModeSelectScreen() {
           </BeeCard>
         </TouchableOpacity>
 
-        {/* One-tap repeat */}
         {hasHistory && (
           <TouchableOpacity onPress={handleOneTapRepeat} style={styles.repeatBtn}>
             <Text style={styles.repeatText}>🔄 One-Tap Repeat — re-run your last adventure with fresh stops!</Text>
@@ -142,10 +138,6 @@ export default function ModeSelectScreen() {
         </View>
 
         <View style={styles.bottomLinks}>
-          {/* Nearby Families — commented out for now */}
-          {/* <TouchableOpacity onPress={() => setModal('nearbyModalOpen', true)}>
-            <Text style={styles.linkText}>👋 Nearby Families</Text>
-          </TouchableOpacity> */}
           <TouchableOpacity onPress={() => router.push('/(app)/profile')}>
             <Text style={styles.linkText}>👤 Profile</Text>
           </TouchableOpacity>
@@ -156,23 +148,23 @@ export default function ModeSelectScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.white },
   content: { padding: 24 },
   topRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
   greeting: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.secondary },
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 26, color: Colors.text, marginBottom: 16 },
   badgeBtn: { padding: 8 },
   badgeIcon: { fontSize: 28 },
-  birthdayBanner: { backgroundColor: '#FFF0D0', borderWidth: 1.5, borderColor: Colors.primary, borderRadius: 14, padding: 14, marginBottom: 16 },
+  birthdayBanner: { backgroundColor: Colors.backgroundAlt, borderWidth: 1.5, borderColor: Colors.accent, borderRadius: 12, padding: 14, marginBottom: 16 },
   birthdayText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.text, textAlign: 'center' },
-  streakBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF5E0', padding: 10, borderRadius: 12, marginBottom: 16, gap: 8 },
+  streakBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.backgroundAlt, padding: 10, borderRadius: 12, marginBottom: 16, gap: 8 },
   streakText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.primary },
   latestBadge: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.text },
   modeCard: { marginBottom: 16 },
   modeEmoji: { fontSize: 40, marginBottom: 8 },
   modeTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 4 },
   modeDesc: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary },
-  repeatBtn: { backgroundColor: '#FFF5E0', padding: 14, borderRadius: 14, marginBottom: 16, alignItems: 'center' },
+  repeatBtn: { backgroundColor: Colors.backgroundAlt, padding: 14, borderRadius: 12, marginBottom: 16, alignItems: 'center' },
   repeatText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary, textAlign: 'center' },
   links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
   bottomLinks: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },

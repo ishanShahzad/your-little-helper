@@ -76,7 +76,7 @@ export function NearbyModal() {
 }
 
 const styles = StyleSheet.create({
-  privacy: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, textAlign: 'center', marginBottom: 16, backgroundColor: '#FFF5E0', padding: 10, borderRadius: 8 },
+  privacy: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, textAlign: 'center', marginBottom: 16, backgroundColor: Colors.backgroundAlt, padding: 10, borderRadius: 8 },
   empty: { alignItems: 'center', paddingVertical: 32 },
   emptyEmoji: { fontSize: 48, marginBottom: 8 },
   emptyText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text },

@@ -88,6 +88,6 @@ const styles = StyleSheet.create({
   activityDesc: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary },
   tag: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.green, marginTop: 8 },
   address: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 4 },
-  reassurance: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: Colors.primary, marginTop: 4, backgroundColor: '#FFF5E0', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  reassurance: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: Colors.primary, marginTop: 4, backgroundColor: Colors.backgroundAlt, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   btn: { marginTop: 12 },
 });

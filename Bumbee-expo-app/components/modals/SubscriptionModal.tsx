@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { BeeModal } from '../BeeModal';
 import { BeeButton } from '../BeeButton';
 import { useAppStore } from '../../store/appStore';
-import { useAuthStore } from '../../store/authStore';
 import { useLocale } from '../../hooks/useLocale';
 import { Colors } from '../../constants/colors';
 import api from '../../services/api';
@@ -21,12 +20,11 @@ export function SubscriptionModal() {
   async function handleSubscribe() {
     setLoading(true);
     try {
-      // DEV bypass: activate plan directly without Stripe payment
       const { data } = await api.post('/subscriptions/dev-activate', { plan: selectedPlan });
-      Alert.alert('🎉 Subscribed!', `You're now on the ${selectedPlan} plan. Enjoy unlimited adventures!`);
+      Alert.alert('You\'re all set! 🐝', `You're now on the ${selectedPlan} plan. Enjoy unlimited adventures!`);
       setModal('subscriptionModalOpen', false);
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Could not activate subscription');
+      Alert.alert('Something went wrong', err.response?.data?.message || "Let's fix that together.");
     } finally {
       setLoading(false);
     }
@@ -78,10 +76,10 @@ export function SubscriptionModal() {
 const styles = StyleSheet.create({
   headline: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: Colors.text, textAlign: 'center', marginBottom: 20 },
   plans: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  planCard: { flex: 1, borderWidth: 2, borderColor: Colors.border, borderRadius: 16, padding: 16, alignItems: 'center' },
-  planSelected: { borderColor: Colors.primary, backgroundColor: '#FFF5E0' },
-  bestValue: { position: 'absolute', top: -10, backgroundColor: Colors.primary, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10 },
-  bestValueText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 10, color: '#fff' },
+  planCard: { flex: 1, borderWidth: 2, borderColor: Colors.border, borderRadius: 12, padding: 16, alignItems: 'center' },
+  planSelected: { borderColor: Colors.primary, backgroundColor: Colors.backgroundAlt },
+  bestValue: { position: 'absolute', top: -10, backgroundColor: Colors.accent, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10 },
+  bestValueText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 10, color: Colors.text },
   planName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text, marginTop: 8 },
   planPrice: { fontFamily: 'Nunito_600SemiBold', fontSize: 20, color: Colors.primary, marginTop: 4 },
   planSave: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.green, marginTop: 4 },

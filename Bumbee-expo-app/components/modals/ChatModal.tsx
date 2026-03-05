@@ -171,7 +171,7 @@ export function ChatModal() {
 }
 
 const styles = StyleSheet.create({
-  privacy: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.secondary, textAlign: 'center', marginBottom: 8, backgroundColor: '#FFF5E0', padding: 6, borderRadius: 6 },
+  privacy: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.secondary, textAlign: 'center', marginBottom: 8, backgroundColor: Colors.backgroundAlt, padding: 6, borderRadius: 6 },
   connectingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 },
   connectingText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary },
   chatList: { maxHeight: 300, marginBottom: 12 },
