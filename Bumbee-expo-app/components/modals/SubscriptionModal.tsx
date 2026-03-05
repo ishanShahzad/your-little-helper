@@ -21,12 +21,12 @@ export function SubscriptionModal() {
   async function handleSubscribe() {
     setLoading(true);
     try {
-      const { data } = await api.post('/subscriptions/create-checkout', { plan: selectedPlan });
-      // In production, use Stripe SDK to confirm payment with data.data.clientSecret
-      Alert.alert('Subscription', 'Payment flow would open here with Stripe SDK. Client secret received.');
+      // DEV bypass: activate plan directly without Stripe payment
+      const { data } = await api.post('/subscriptions/dev-activate', { plan: selectedPlan });
+      Alert.alert('🎉 Subscribed!', `You're now on the ${selectedPlan} plan. Enjoy unlimited adventures!`);
       setModal('subscriptionModalOpen', false);
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Could not start subscription');
+      Alert.alert('Error', err.response?.data?.message || 'Could not activate subscription');
     } finally {
       setLoading(false);
     }

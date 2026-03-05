@@ -21,6 +21,14 @@ export class SubscriptionsController {
     return { success: true };
   }
 
+  // DEV ONLY: bypass Stripe and activate plan directly
+  @Post('dev-activate')
+  @UseGuards(JwtAuthGuard)
+  async devActivate(@Req() req: any, @Body('plan') plan: 'monthly' | 'annual') {
+    const data = await this.subscriptionsService.devActivate(req.user.userId, plan);
+    return { success: true, data };
+  }
+
   @Get('status')
   @UseGuards(JwtAuthGuard)
   async getStatus(@Req() req: any) {
