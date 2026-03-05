@@ -453,4 +453,40 @@ export class HuntsService {
       return { recapCardUrl: null, html };
     }
   }
+
+  // ── Walking Route (user → stop) ────────────────────────────
+
+  async getWalkingRoute(fromLat: number, fromLng: number, toLat: number, toLng: number) {
+    const orsKey = this.configService.get('ORS_API_KEY');
+    try {
+      const { data } = await axios.get(
+        `https://api.openrouteservice.org/v2/directions/foot-walking`,
+        {
+          params: {
+            api_key: orsKey,
+            start: `${fromLng},${fromLat}`,
+            end: `${toLng},${toLat}`,
+          },
+        },
+      );
+      const coords = data.features?.[0]?.geometry?.coordinates || [];
+      const polyline = coords.map((c: number[]) => ({ latitude: c[1], longitude: c[0] }));
+      const summary = data.features?.[0]?.properties?.summary || {};
+      return {
+        polyline,
+        distance: summary.distance || 0,
+        duration: summary.duration || 0,
+      };
+    } catch (err) {
+      // Fallback: straight line
+      return {
+        polyline: [
+          { latitude: fromLat, longitude: fromLng },
+          { latitude: toLat, longitude: toLng },
+        ],
+        distance: 0,
+        duration: 0,
+      };
+    }
+  }
 }

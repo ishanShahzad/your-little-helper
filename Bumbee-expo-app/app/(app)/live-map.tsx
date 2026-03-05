@@ -53,12 +53,16 @@ export default function LiveMapScreen() {
   const [distToStop, setDistToStop] = useState<number | null>(null);
   const [arrived, setArrived] = useState(false);
   const [walkedPath, setWalkedPath] = useState<{ latitude: number; longitude: number }[]>([]);
+  const [navigationRoute, setNavigationRoute] = useState<{ latitude: number; longitude: number }[]>([]);
+  const [routeDistance, setRouteDistance] = useState<number>(0);
+  const [routeDuration, setRouteDuration] = useState<number>(0);
   const [showMissionPanel, setShowMissionPanel] = useState(true);
   const [countAnswer, setCountAnswer] = useState('');
   const [riddleAnswer, setRiddleAnswer] = useState('');
   const locationSub = useRef<Location.LocationSubscription | null>(null);
   const mapRef = useRef<MapView | null>(null);
   const arrivedRef = useRef(false);
+  const lastRouteFetch = useRef<number>(0);
 
   useEffect(() => { arrivedRef.current = arrived; }, [arrived]);
 
@@ -72,7 +76,34 @@ export default function LiveMapScreen() {
     arrivedRef.current = false;
     setCountAnswer('');
     setRiddleAnswer('');
+    setNavigationRoute([]);
+    // Fetch route to new stop immediately
+    if (location && currentHunt?.stops[currentStopIndex]) {
+      const s = currentHunt.stops[currentStopIndex];
+      fetchNavigationRoute(location.lat, location.lng, s.lat, s.lng);
+    }
   }, [currentStopIndex]);
+
+  async function fetchNavigationRoute(fromLat: number, fromLng: number, toLat: number, toLng: number) {
+    const now = Date.now();
+    // Throttle: only fetch every 30 seconds
+    if (now - lastRouteFetch.current < 30000 && navigationRoute.length > 0) return;
+    lastRouteFetch.current = now;
+    try {
+      const { data } = await api.post('/hunts/route', { fromLat, fromLng, toLat, toLng });
+      if (data.data?.polyline?.length >= 2) {
+        setNavigationRoute(data.data.polyline);
+        setRouteDistance(data.data.distance || 0);
+        setRouteDuration(data.data.duration || 0);
+      }
+    } catch {
+      // Fallback: straight line
+      setNavigationRoute([
+        { latitude: fromLat, longitude: fromLng },
+        { latitude: toLat, longitude: toLng },
+      ]);
+    }
+  }
 
   async function saveTrack() {
     const hunt = useHuntStore.getState().currentHunt;
@@ -133,6 +164,9 @@ export default function LiveMapScreen() {
             const stop = hunt.stops[idx];
             const dist = haversineDistance(userLat, userLng, stop.lat, stop.lng);
             setDistToStop(Math.round(dist));
+
+            // Refresh navigation route every 30s while walking
+            fetchNavigationRoute(userLat, userLng, stop.lat, stop.lng);
 
             if (dist < 50 && !arrivedRef.current) {
               arrivedRef.current = true;
@@ -272,9 +306,15 @@ export default function LiveMapScreen() {
           </Marker>
         ))}
 
-        {routeCoords.length >= 2 && (
-          <Polyline coordinates={routeCoords} strokeColor={Colors.primary} strokeWidth={4} lineDashPattern={[8, 4]} />
+        {/* Navigation route (road-following, blue) */}
+        {navigationRoute.length >= 2 && (
+          <Polyline coordinates={navigationRoute} strokeColor={Colors.primary} strokeWidth={5} />
         )}
+        {/* Faded overall route between all stops */}
+        {routeCoords.length >= 2 && (
+          <Polyline coordinates={routeCoords} strokeColor={Colors.primary} strokeWidth={2} lineDashPattern={[8, 4]} strokeColors={['rgba(26,143,227,0.3)']} />
+        )}
+        {/* Walked path (green) */}
         {walkedPath.length >= 2 && (
           <Polyline coordinates={walkedPath} strokeColor="#4CAF50" strokeWidth={3} />
         )}
@@ -285,10 +325,16 @@ export default function LiveMapScreen() {
         <Text style={styles.centerBtnText}>◎</Text>
       </TouchableOpacity>
 
-      {/* Distance badge */}
+      {/* Distance & ETA badge */}
       {distToStop !== null && (
         <View style={styles.distBadge}>
-          <Text style={styles.distText}>{distToStop < 50 ? '✅ You\'re here!' : `${distToStop}m away`}</Text>
+          <Text style={styles.distText}>
+            {distToStop < 50
+              ? '✅ You\'re here!'
+              : routeDistance > 0
+                ? `🚶 ${routeDistance >= 1000 ? (routeDistance / 1000).toFixed(1) + 'km' : Math.round(routeDistance) + 'm'} · ${Math.max(1, Math.round(routeDuration / 60))} min`
+                : `${distToStop}m away`}
+          </Text>
         </View>
       )}
 
