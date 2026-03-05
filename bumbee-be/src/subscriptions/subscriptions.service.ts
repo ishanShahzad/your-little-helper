@@ -71,6 +71,15 @@ export class SubscriptionsService {
     }
   }
 
+  // DEV ONLY: bypass Stripe, instantly activate a plan
+  async devActivate(userId: string, plan: 'monthly' | 'annual') {
+    const expiresAt = new Date(Date.now() + (plan === 'monthly' ? 30 : 365) * 86400000);
+    await this.userModel.findByIdAndUpdate(userId, {
+      $set: { 'subscription.plan': plan, 'subscription.expiresAt': expiresAt },
+    });
+    return { plan, expiresAt };
+  }
+
   async getStatus(userId: string) {
     const user = await this.userModel.findById(userId).select('subscription').lean();
     return user?.subscription || { plan: 'free' };
