@@ -76,9 +76,9 @@ export class HuntsService {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       pois = (data.elements || []).slice(0, 4);
-    } catch { /* fallback to empty */ }
+    } catch { /* fallback */ }
 
-    // Build stops with richer challenges
+    // Build stops
     const stops = pois.map((poi: any, idx: number) => ({
       name: poi.tags?.name || `Stop ${poi.id}`,
       lat: poi.lat,
@@ -103,18 +103,32 @@ export class HuntsService {
       });
     }
 
-    // Get route from OpenRouteService
+    // Get walking route from OpenRouteService — extract the encoded polyline geometry
     let route = { distance: 0, duration: 0, polyline: '' };
     try {
       const coords = stops.map((s: any) => [s.lng, s.lat]);
       const { data: routeData } = await axios.post(
         `${this.configService.get('OPENROUTE_API_URL')}/directions/foot-walking`,
         { coordinates: coords },
-        { headers: { Authorization: `Bearer ${this.configService.get('OPENROUTE_API_KEY')}` } },
+        {
+          headers: {
+            Authorization: `Bearer ${this.configService.get('OPENROUTE_API_KEY')}`,
+            'Content-Type': 'application/json',
+          },
+        },
       );
-      const seg = routeData.routes?.[0]?.summary;
-      route = { distance: seg?.distance || 0, duration: seg?.duration || 0, polyline: '' };
-    } catch { /* fallback */ }
+      const routeObj = routeData.routes?.[0];
+      if (routeObj) {
+        route = {
+          distance: routeObj.summary?.distance || 0,
+          duration: routeObj.summary?.duration || 0,
+          // Store the encoded polyline geometry for the mobile app to decode and render on the map
+          polyline: routeObj.geometry || '',
+        };
+      }
+    } catch (err) {
+      console.log('OpenRouteService error, falling back to straight lines:', err?.message);
+    }
 
     // Get weather from Open-Meteo
     let weather = { temp: 0, condition: 'unknown', icon: '' };
@@ -177,7 +191,6 @@ export class HuntsService {
       update[`stops.${stopIndex}.photoUrl`] = result.secure_url;
       return this.huntModel.findByIdAndUpdate(huntId, { $set: update }, { new: true }).lean();
     } catch {
-      // If Cloudinary fails, still mark the stop but without photo URL
       return this.huntModel.findById(huntId).lean();
     }
   }
@@ -220,8 +233,8 @@ export class HuntsService {
 
     if (lastDate) {
       const diffDays = Math.floor((now.getTime() - new Date(lastDate).getTime()) / 86400000);
-      if (diffDays <= 2) return { newBadge: null }; // same weekend
-      streak = diffDays <= 9 ? streak + 1 : 1; // consecutive vs reset
+      if (diffDays <= 2) return { newBadge: null };
+      streak = diffDays <= 9 ? streak + 1 : 1;
     } else {
       streak = 1;
     }

@@ -2,14 +2,14 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 
-// Import all modals
+// Import modals (Nearby + Chat commented out)
 import { SubscriptionModal } from '../../components/modals/SubscriptionModal';
 import { TermsModal } from '../../components/modals/TermsModal';
 import { PrivacyModal } from '../../components/modals/PrivacyModal';
 import { BadgeGalleryModal } from '../../components/modals/BadgeGalleryModal';
 import { ReferralModal } from '../../components/modals/ReferralModal';
-import { NearbyModal } from '../../components/modals/NearbyModal';
-import { ChatModal } from '../../components/modals/ChatModal';
+// import { NearbyModal } from '../../components/modals/NearbyModal';
+// import { ChatModal } from '../../components/modals/ChatModal';
 import { FeedbackModal } from '../../components/modals/FeedbackModal';
 
 export default function AppLayout() {
@@ -31,8 +31,9 @@ export default function AppLayout() {
       <PrivacyModal />
       <BadgeGalleryModal />
       <ReferralModal />
-      <NearbyModal />
-      <ChatModal />
+      {/* Nearby Families — commented out for now */}
+      {/* <NearbyModal /> */}
+      {/* <ChatModal /> */}
       <FeedbackModal />
     </>
   );
