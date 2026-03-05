@@ -22,6 +22,38 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/** Decode Google-style encoded polyline string into coordinate array */
+function decodePolyline(encoded: string): { latitude: number; longitude: number }[] {
+  const coords: { latitude: number; longitude: number }[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < encoded.length) {
+    let shift = 0;
+    let result = 0;
+    let byte: number;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+
+    shift = 0;
+    result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+
+    coords.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+  }
+  return coords;
+}
+
 export default function LiveMapScreen() {
   const router = useRouter();
   const { currentHunt, selectedTheme, mood, ages, currentStopIndex, setHunt, completeStop } = useHuntStore();
@@ -42,7 +74,6 @@ export default function LiveMapScreen() {
     startHunt();
     return () => {
       locationSub.current?.remove();
-      // Save walked path to backend when leaving
       saveTrack();
     };
   }, []);
@@ -61,7 +92,7 @@ export default function LiveMapScreen() {
         walkedPath: walkedPath.map((p) => ({ lat: p.latitude, lng: p.longitude })),
       });
     } catch {
-      // silent — track saving is best-effort
+      // silent
     }
   }
 
@@ -132,9 +163,9 @@ export default function LiveMapScreen() {
   }
 
   const getStopMarkerColor = useCallback((index: number) => {
-    if (index < currentStopIndex) return Colors.green;
+    if (index < currentStopIndex) return '#4CAF50';
     if (index === currentStopIndex) return Colors.primary;
-    return Colors.grey;
+    return '#999';
   }, [currentStopIndex]);
 
   if (loading) return <BeeLoader message="Finding adventure spots nearby..." />;
@@ -143,8 +174,15 @@ export default function LiveMapScreen() {
   const stop = currentHunt.stops[currentStopIndex];
   const isLastStop = currentStopIndex >= currentHunt.stops.length - 1;
 
-  // Route polyline from stop coordinates
-  const routeCoords = currentHunt.stops.map((s) => ({ latitude: s.lat, longitude: s.lng }));
+  // Decode the walking route polyline from OpenRouteService
+  // If polyline exists, use it for the actual walking route; otherwise fall back to straight lines between stops
+  let routeCoords: { latitude: number; longitude: number }[] = [];
+  if (currentHunt.route?.polyline) {
+    routeCoords = decodePolyline(currentHunt.route.polyline);
+  } else {
+    // Fallback: straight lines connecting stops in order
+    routeCoords = currentHunt.stops.map((s) => ({ latitude: s.lat, longitude: s.lng }));
+  }
 
   // Initial map region centered on user or first stop
   const initialRegion = {
@@ -198,7 +236,7 @@ export default function LiveMapScreen() {
         showsMyLocationButton={false}
         showsCompass
       >
-        {/* User location blue pulsing dot */}
+        {/* User location blue dot */}
         {location && (
           <>
             <Circle
@@ -229,7 +267,7 @@ export default function LiveMapScreen() {
           />
         ))}
 
-        {/* Planned route polyline (gold) */}
+        {/* Walking route polyline (gold dashed) */}
         {routeCoords.length >= 2 && (
           <Polyline
             coordinates={routeCoords}
@@ -239,11 +277,11 @@ export default function LiveMapScreen() {
           />
         )}
 
-        {/* Walked path polyline (green) */}
+        {/* Walked path polyline (green solid) */}
         {walkedPath.length >= 2 && (
           <Polyline
             coordinates={walkedPath}
-            strokeColor={Colors.green}
+            strokeColor="#4CAF50"
             strokeWidth={3}
           />
         )}
@@ -268,6 +306,12 @@ export default function LiveMapScreen() {
           </Text>
         )}
 
+        {currentHunt.route?.distance > 0 && (
+          <Text style={styles.routeInfo}>
+            📏 {(currentHunt.route.distance / 1000).toFixed(1)} km total • ⏱️ {Math.round(currentHunt.route.duration / 60)} min walk
+          </Text>
+        )}
+
         <BeeButton title={isLastStop ? '🎉 Finish Hunt!' : "📸 I'm Here!"} onPress={handleCompleteStop} />
         <Text style={styles.abandonLink} onPress={handleAbandon}>Abandon Hunt</Text>
       </View>
@@ -284,6 +328,7 @@ const styles = StyleSheet.create({
   stopName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 8 },
   clue: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.primary, marginBottom: 8 },
   challenge: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary, marginBottom: 8 },
-  weather: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary, marginBottom: 16 },
+  weather: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary, marginBottom: 4 },
+  routeInfo: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary, marginBottom: 16 },
   abandonLink: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.error, textAlign: 'center', marginTop: 12 },
 });

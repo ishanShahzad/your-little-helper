@@ -142,9 +142,10 @@ export default function ModeSelectScreen() {
         </View>
 
         <View style={styles.bottomLinks}>
-          <TouchableOpacity onPress={() => setModal('nearbyModalOpen', true)}>
+          {/* Nearby Families — commented out for now */}
+          {/* <TouchableOpacity onPress={() => setModal('nearbyModalOpen', true)}>
             <Text style={styles.linkText}>👋 Nearby Families</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity onPress={() => router.push('/(app)/profile')}>
             <Text style={styles.linkText}>👤 Profile</Text>
           </TouchableOpacity>
@@ -174,6 +175,6 @@ const styles = StyleSheet.create({
   repeatBtn: { backgroundColor: '#FFF5E0', padding: 14, borderRadius: 14, marginBottom: 16, alignItems: 'center' },
   repeatText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary, textAlign: 'center' },
   links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
-  bottomLinks: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
+  bottomLinks: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
   linkText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary },
 });
