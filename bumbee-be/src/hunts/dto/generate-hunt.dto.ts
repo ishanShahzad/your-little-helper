@@ -6,5 +6,6 @@ export class GenerateHuntDto {
   @IsString() theme: string;
   @IsString() mood: string;
   @IsArray() ages: number[];
+  @IsOptional() @IsNumber() durationMinutes?: number;
   @IsOptional() preferences?: Record<string, any>;
 }

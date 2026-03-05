@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BeeHeader } from '../../components/BeeHeader';
 import { BeeButton } from '../../components/BeeButton';
@@ -30,15 +30,22 @@ export default function AgesScreen() {
   function handleContinue() {
     const ages = kids.filter((k) => k.age).map((k) => parseInt(k.age));
     setAges(ages);
-    router.push('/(app)/mood');
+    router.push('/(app)/duration');
   }
 
   return (
     <View style={styles.container}>
       <BeeHeader title="Who's Coming?" />
+      {/* Progress bar: Step 1 of 5 (ages is first in scavenger hunt flow) */}
+      <View style={styles.progressBar}>
+        {[1, 2, 3, 4, 5].map((step) => (
+          <View key={step} style={[styles.progressDot, step <= 1 && styles.progressActive]} />
+        ))}
+      </View>
+
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Who's coming on the adventure?</Text>
-        <Text style={styles.subtitle}>Add up to 6 children</Text>
+        <Text style={styles.subtitle}>Ages help us create age-appropriate clues & challenges</Text>
 
         {kids.map((kid, i) => (
           <BeeCard key={i} style={styles.kidCard}>
@@ -68,6 +75,9 @@ export default function AgesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  progressBar: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 12 },
+  progressDot: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border },
+  progressActive: { backgroundColor: Colors.primary },
   content: { padding: 24 },
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24, color: Colors.text, marginBottom: 4 },
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary, marginBottom: 20 },
