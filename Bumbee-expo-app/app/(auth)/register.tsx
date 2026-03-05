@@ -4,12 +4,14 @@ import { useRouter } from 'expo-router';
 import { BeeInput } from '../../components/BeeInput';
 import { BeeButton } from '../../components/BeeButton';
 import { useAuthStore } from '../../store/authStore';
+import { useAppStore } from '../../store/appStore';
 import { Colors } from '../../constants/colors';
 import api from '../../services/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const setModal = useAppStore((s) => s.setModal);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [dob, setDob] = useState('');
@@ -22,7 +24,6 @@ export default function RegisterScreen() {
     if (!name || !email || !dob || !password) return Alert.alert('Error', 'Please fill in all required fields');
     if (!agreedTerms) return Alert.alert('Error', 'You must agree to Terms & Privacy Policy');
 
-    // Client-side age check
     const dobDate = new Date(dob);
     const age = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     if (age < 12) return Alert.alert('Age Requirement', 'You must be at least 12 years old to use Bumbee');
@@ -54,7 +55,12 @@ export default function RegisterScreen() {
 
       <View style={styles.termsRow}>
         <Switch value={agreedTerms} onValueChange={setAgreedTerms} trackColor={{ true: Colors.primary }} />
-        <Text style={styles.termsText}>I agree to the Terms & Privacy Policy</Text>
+        <Text style={styles.termsText}>
+          I agree to the{' '}
+          <Text style={styles.termsLink} onPress={() => setModal('termsModalOpen', true)}>Terms</Text>
+          {' & '}
+          <Text style={styles.termsLink} onPress={() => setModal('privacyModalOpen', true)}>Privacy Policy</Text>
+        </Text>
       </View>
 
       <BeeButton title="Create Account" onPress={handleRegister} loading={loading} disabled={!agreedTerms} />
@@ -73,6 +79,7 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.secondary, textAlign: 'center', marginBottom: 24 },
   termsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   termsText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.text, marginLeft: 8, flex: 1 },
+  termsLink: { fontFamily: 'Nunito_600SemiBold', color: Colors.primary, textDecorationLine: 'underline' },
   link: { marginTop: 24, alignItems: 'center', paddingBottom: 40 },
   linkText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary },
   linkBold: { fontFamily: 'Nunito_600SemiBold', color: Colors.primary },

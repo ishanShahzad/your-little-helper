@@ -1,4 +1,5 @@
-import { Controller, Post, Patch, Get, Param, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Patch, Get, Param, Body, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { HuntsService } from './hunts.service';
 import { GenerateHuntDto } from './dto/generate-hunt.dto';
@@ -26,6 +27,17 @@ export class HuntsController {
     return { success: true, data };
   }
 
+  @Patch(':id/stop/:stopIndex/photo')
+  @UseInterceptors(FileInterceptor('photo'))
+  async uploadStopPhoto(
+    @Param('id') id: string,
+    @Param('stopIndex') idx: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const data = await this.huntsService.uploadStopPhoto(id, parseInt(idx), file);
+    return { success: true, data };
+  }
+
   @Patch(':id/complete')
   async completeHunt(@Req() req: any, @Param('id') id: string) {
     const data = await this.huntsService.completeHunt(req.user.userId, id);
@@ -33,8 +45,12 @@ export class HuntsController {
   }
 
   @Patch(':id/rating')
-  async rateHunt(@Param('id') id: string, @Body() body: any) {
+  async rateHunt(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     const data = await this.huntsService.rateHunt(id, body);
+    // If 5-star rating, save theme to favorites
+    if (body.rating === 5) {
+      await this.huntsService.saveThemeToFavorites(req.user.userId, id);
+    }
     return { success: true, data };
   }
 

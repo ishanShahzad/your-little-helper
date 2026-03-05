@@ -35,14 +35,26 @@ export class HuntsService {
 
   private generateClue(theme: string, stopName: string): string {
     const templates: Record<string, string[]> = {
-      pirate: [`Arrr! Captain Goldbeard buried treasure near ${stopName}!`, `X marks the spot at ${stopName}, matey!`],
-      spy: [`Agent B's intel says the drop is at ${stopName}.`, `Your mission: infiltrate ${stopName}.`],
-      fairy: [`Sparkle left fairy dust at ${stopName}!`, `The enchanted ${stopName} awaits!`],
-      unicorn: [`Stardust galloped through ${stopName}!`, `A rainbow trail leads to ${stopName}!`],
-      explorer: [`Scout spotted something at ${stopName}!`, `Your compass points to ${stopName}!`],
+      pirate: [`Arrr! Captain Goldbeard buried treasure near ${stopName}!`, `X marks the spot at ${stopName}, matey!`, `The treasure map points to ${stopName}!`],
+      spy: [`Agent B's intel says the drop is at ${stopName}.`, `Your mission: infiltrate ${stopName}.`, `Top secret rendezvous at ${stopName}.`],
+      fairy: [`Sparkle left fairy dust at ${stopName}!`, `The enchanted ${stopName} awaits!`, `Fairy magic is strongest near ${stopName}!`],
+      unicorn: [`Stardust galloped through ${stopName}!`, `A rainbow trail leads to ${stopName}!`, `Unicorn hoofprints spotted near ${stopName}!`],
+      explorer: [`Scout spotted something at ${stopName}!`, `Your compass points to ${stopName}!`, `An undiscovered trail leads to ${stopName}!`],
     };
     const t = templates[theme] || [`Head to ${stopName}!`];
     return t[Math.floor(Math.random() * t.length)];
+  }
+
+  private generateChallenge(theme: string, stopIndex: number): string {
+    const challenges: Record<string, string[]> = {
+      pirate: ['Draw an X on the ground with a stick!', 'Do your best pirate "Arrr!" pose for the camera!', 'Find something that looks like buried treasure!', 'Walk the plank (find a log or bench)!'],
+      spy: ['Take a sneaky photo without being seen!', 'Find 3 things that could be spy gadgets!', 'Walk past without making a sound!', 'Find a secret hiding spot nearby!'],
+      fairy: ['Sprinkle imaginary fairy dust everywhere!', 'Find the prettiest flower or leaf!', 'Do a fairy dance and spin 3 times!', 'Make a wish and throw a pebble!'],
+      unicorn: ['Do a magical unicorn gallop!', 'Find something rainbow-coloured!', 'Strike a majestic unicorn pose!', 'Find the sparkliest thing nearby!'],
+      explorer: ['Take a photo of something you\'ve never seen before!', 'Identify 3 different types of trees!', 'Find animal tracks or signs of wildlife!', 'Draw a mini map of this area!'],
+    };
+    const c = challenges[theme] || ['Take a photo with the character here!'];
+    return c[stopIndex % c.length];
   }
 
   async generate(userId: string, dto: GenerateHuntDto) {
@@ -66,14 +78,14 @@ export class HuntsService {
       pois = (data.elements || []).slice(0, 4);
     } catch { /* fallback to empty */ }
 
-    // Build stops
-    const stops = pois.map((poi: any) => ({
+    // Build stops with richer challenges
+    const stops = pois.map((poi: any, idx: number) => ({
       name: poi.tags?.name || `Stop ${poi.id}`,
       lat: poi.lat,
       lng: poi.lon,
       type: poi.tags?.leisure || 'point',
       clue: this.generateClue(dto.theme, poi.tags?.name || 'this location'),
-      challenge: `Take a photo with the ${dto.theme} character here!`,
+      challenge: this.generateChallenge(dto.theme, idx),
       completed: false,
     }));
 
@@ -86,7 +98,7 @@ export class HuntsService {
         lng: dto.lng + offset,
         type: 'mystery',
         clue: this.generateClue(dto.theme, 'this mystery spot'),
-        challenge: 'Explore and find something interesting!',
+        challenge: this.generateChallenge(dto.theme, stops.length),
         completed: false,
       });
     }
@@ -138,6 +150,30 @@ export class HuntsService {
     return this.huntModel.findByIdAndUpdate(huntId, { $set: update }, { new: true }).lean();
   }
 
+  async uploadStopPhoto(huntId: string, stopIndex: number, file: Express.Multer.File) {
+    if (!file) throw new NotFoundException('No file provided');
+
+    try {
+      const result = await new Promise<any>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'bumbee-photos', resource_type: 'image' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          },
+        );
+        stream.end(file.buffer);
+      });
+
+      const update: any = {};
+      update[`stops.${stopIndex}.photoUrl`] = result.secure_url;
+      return this.huntModel.findByIdAndUpdate(huntId, { $set: update }, { new: true }).lean();
+    } catch {
+      // If Cloudinary fails, still mark the stop but without photo URL
+      return this.huntModel.findById(huntId).lean();
+    }
+  }
+
   async completeHunt(userId: string, huntId: string) {
     const hunt = await this.huntModel.findByIdAndUpdate(
       huntId,
@@ -145,7 +181,6 @@ export class HuntsService {
       { new: true },
     ).lean();
 
-    // Update user history
     await this.userModel.findByIdAndUpdate(userId, {
       $push: {
         history: {
@@ -215,22 +250,58 @@ export class HuntsService {
     return this.huntModel.findByIdAndUpdate(huntId, { $set: body }, { new: true }).lean();
   }
 
+  async saveThemeToFavorites(userId: string, huntId: string) {
+    const hunt = await this.huntModel.findById(huntId).lean();
+    if (!hunt) return;
+    await this.userModel.findByIdAndUpdate(userId, {
+      $addToSet: { 'familyProfile.favorites': hunt.theme },
+    });
+  }
+
   async generateRecap(huntId: string) {
     const hunt = await this.huntModel.findById(huntId).lean();
     if (!hunt) throw new NotFoundException('Hunt not found');
 
+    const themeEmojis: Record<string, string> = {
+      pirate: '🏴‍☠️', spy: '🕵️', fairy: '🧚', unicorn: '🦄', explorer: '🧭',
+    };
+
     const html = `
-      <div style="width:600px;background:#FFFBF0;border:3px solid #F5A623;border-radius:16px;padding:24px;font-family:'Nunito',sans-serif;">
-        <h1 style="color:#2C2200;font-family:'Fredoka',sans-serif;text-align:center;">🐝 Bumbee Adventure Recap</h1>
-        <p style="text-align:center;color:#8A7A66;">Theme: ${hunt.theme} | Stops: ${hunt.stops?.length || 0}</p>
-        <p style="text-align:center;color:#8A7A66;">Distance: ${((hunt.route?.distance || 0) / 1000).toFixed(1)} km</p>
-        <p style="text-align:center;color:#F5A623;font-size:18px;">${Math.floor(Math.random() * 15) + 10} giggles estimated 😄</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0;">
-          ${(hunt.stops || []).map((s: any) => s.photoUrl ? `<img src="${s.photoUrl}" style="width:100%;border-radius:8px;" />` : '').join('')}
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+        <style>
+          body { margin:0; padding:0; }
+          .card { width:600px; background:#FFFBF0; border:3px solid #F5A623; border-radius:16px; padding:24px; font-family:'Nunito',sans-serif; box-sizing:border-box; }
+          h1 { color:#2C2200; font-family:'Fredoka',sans-serif; text-align:center; margin:0 0 8px; }
+          .theme { text-align:center; font-size:48px; margin-bottom:8px; }
+          .stats { text-align:center; color:#8A7A66; margin:4px 0; }
+          .giggles { text-align:center; color:#F5A623; font-size:18px; font-weight:600; margin:12px 0; }
+          .photos { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; }
+          .photos img { width:100%; border-radius:8px; aspect-ratio:1; object-fit:cover; }
+          .footer { display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
+          .logo { color:#F5A623; font-family:'Fredoka',sans-serif; font-size:14px; }
+          .copyright { color:#8A7A66; font-size:10px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="theme">${themeEmojis[hunt.theme] || '🐝'}</div>
+          <h1>Bumbee Adventure Recap</h1>
+          <p class="stats">Theme: ${hunt.theme} | Stops: ${hunt.stops?.length || 0}</p>
+          <p class="stats">Distance: ${((hunt.route?.distance || 0) / 1000).toFixed(1)} km</p>
+          <p class="giggles">${Math.floor(Math.random() * 15) + 10} giggles estimated 😄</p>
+          <div class="photos">
+            ${(hunt.stops || []).map((s: any) => s.photoUrl ? `<img src="${s.photoUrl}" />` : '').join('')}
+          </div>
+          <div class="footer">
+            <span class="copyright">© 2025 Bumbee Ltd</span>
+            <span class="logo">🐝 Bumbee</span>
+          </div>
         </div>
-        <p style="text-align:right;color:#F5A623;font-size:12px;">🐝 Bumbee</p>
-        <p style="text-align:left;color:#8A7A66;font-size:10px;">© 2025 Bumbee Ltd</p>
-      </div>`;
+      </body>
+      </html>`;
 
     try {
       const result = await cloudinary.uploader.upload(
