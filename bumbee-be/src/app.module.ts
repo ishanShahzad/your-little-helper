@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { HuntsModule } from './hunts/hunts.module';
@@ -32,5 +34,7 @@ import { CronModule } from './cron/cron.module';
     FeedbackModule,
     CronModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
