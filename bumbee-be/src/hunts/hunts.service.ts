@@ -92,7 +92,7 @@ export class HuntsService {
       { taskType: TaskType.COUNT_TASK, missionTitle: 'Bench scout', taskPrompt: 'Count every bench you can see from where you\'re standing. Don\'t move your feet!', taskAnswer: '' },
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Greenest selfie', taskPrompt: 'Take a selfie with as much green nature as possible in the background. Compete for the leafiest shot!' },
       { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Nature riddle', taskPrompt: 'I have rings but no fingers, I grow tall and give you shade. You can carve your name in me. What am I?', taskAnswer: 'tree' },
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Nature walk', taskPrompt: 'Walk to the furthest corner of this park and find one natural thing that surprises you!' } as any,
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Nature walk', taskPrompt: 'Walk to the furthest corner of this park and find one natural thing that surprises you!' },
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a feather', taskPrompt: 'Find a feather, leaf with an unusual shape, or a stone with an interesting pattern!' },
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Shadow art', taskPrompt: 'Make a funny shadow pose on the ground and take a photo of it from above!' },
     ],
@@ -102,7 +102,7 @@ export class HuntsService {
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Treat selfie', taskPrompt: 'Take a selfie holding your treat with the biggest smile you can manage!' },
       { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Flavour riddle', taskPrompt: 'I am yellow, cold, and rhyme with "lime." You squeeze me but I\'m not a stress ball. What am I?', taskAnswer: 'lemon' },
       { taskType: TaskType.COUNT_TASK, missionTitle: 'Seat count', taskPrompt: 'Count how many seats (chairs AND stools) are in this place. Estimate if it\'s huge!', taskAnswer: '' },
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Napkin art', taskPrompt: 'Draw your adventure character on a napkin and show the whole group. Whose is best?' } as any,
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Napkin art', taskPrompt: 'Draw your adventure character on a napkin and show the whole group. Whose is best?' },
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Stack your treats', taskPrompt: 'Stack your cups, wrappers, or anything safe into a tiny tower and photograph it!' },
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Spot the chalk board', taskPrompt: 'Find the specials board or menu sign. Read today\'s special out loud in a dramatic announcer voice!' },
     ],
@@ -110,7 +110,7 @@ export class HuntsService {
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Theme-coloured cover', taskPrompt: 'Find a book whose cover colour matches the colour of your adventure theme. Hold it up!' },
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Rainbow shelf', taskPrompt: 'Find the most colourful bookshelf section and photograph it!' },
       { taskType: TaskType.COUNT_TASK, missionTitle: 'Shelf count', taskPrompt: 'Count every shelf visible from where you stand right now!', taskAnswer: '' },
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Library riddle', taskPrompt: 'I have pages but I\'m not a notebook. I have a spine but I\'m not a skeleton. You open me but I\'m not a door. What am I?', taskAnswer: 'book' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Library riddle', taskPrompt: 'I have pages but I\'m not a notebook. I have a spine but I\'m not a skeleton. You open me but I\'m not a door. What am I?', taskAnswer: 'book' },
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Deep reader selfie', taskPrompt: 'Pick up the thickest book you can find. Take a selfie pretending you\'ve already read every word!' },
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a globe or map', taskPrompt: 'Find a globe, atlas, or large map anywhere in the library. Touch the country you\'d most like to visit!' },
       { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Whisper challenge', taskPrompt: 'Whisper a funny sentence to each member of your group like a game of telephone. What comes out the other end?' },
@@ -121,55 +121,95 @@ export class HuntsService {
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Best cover award', taskPrompt: 'Find the book with the most exciting-looking cover. Take a photo and explain why it would make an amazing movie!' },
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Bookworm selfie', taskPrompt: 'Take a selfie while pretending to be SO absorbed in a book you don\'t notice the camera!' },
       { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Story riddle', taskPrompt: 'The more you take from me, the bigger I get. What am I?', taskAnswer: 'hole' },
-      { taskType: TaskType.COUNT_TASK, misionTitle: 'Section count', taskPrompt: 'How many different sections or genres can you find in this shop? Count the signs!', taskAnswer: '' } as any,
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Section count', taskPrompt: 'How many different sections or genres can you find in this shop? Count the signs!', taskAnswer: '' },
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a character like you', taskPrompt: 'Find a book whose main character shares something in common with someone in your group — same name, age, hair, or job!' },
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Dramatic reading', taskPrompt: 'Open any book to a random page and read the first full sentence out loud in the most dramatic voice possible!' } as any,
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Dramatic reading', taskPrompt: 'Open any book to a random page and read the first full sentence out loud in the most dramatic voice possible!' },
     ],
     toyshop: [
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Theme toy match', taskPrompt: 'Find a toy that best matches today\'s adventure theme. Make your case for why it fits!' },
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Stuffed animal squad', taskPrompt: 'Gather around the fluffiest stuffed animal you can find and take a group selfie with it!' },
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Wheels!', taskPrompt: 'Find a toy with wheels. Take a photo of it as if you\'re a car reviewer on TV!' },
       { taskType: TaskType.COUNT_TASK, missionTitle: 'Colour survey', taskPrompt: 'How many different colours of toy can you spot from where you\'re standing? No moving!', taskAnswer: '' },
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Toy riddle', taskPrompt: 'Kids play with me, but I\'m not a sport. I have strings but I\'m not a guitar. What am I?', taskAnswer: 'puppet' } as any,
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find the tallest toy', taskPrompt: 'Find the tallest toy in the shop. Stand next to it and compare heights!' } as any,
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Robot walk', taskPrompt: 'Do your best robot impression and walk through this aisle. Everyone joins — no exceptions!' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Toy riddle', taskPrompt: 'Kids play with me, but I\'m not a sport. I have strings but I\'m not a guitar. What am I?', taskAnswer: 'puppet' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the tallest toy', taskPrompt: 'Find the tallest toy in the shop. Stand next to it and compare heights!' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Robot walk', taskPrompt: 'Do your best robot impression and walk through this aisle. Everyone joins — no exceptions!' },
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Most ridiculous toy', taskPrompt: 'Find the most ridiculous or weirdest toy in the whole shop. Take a photo and award it the "What Were They Thinking?" prize!' },
     ],
     bakery: [
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Golden bake trophy', taskPrompt: 'Find the most perfectly golden-brown item in the display. Take a professional-looking food photo!' },
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find your birthday cake', taskPrompt: 'Find the most over-the-top decorated cake or pastry. Whose birthday would this be perfect for?' },
-      { taskType: TaskType.SELFIE_TASK, misionTitle: 'Head baker selfie', taskPrompt: 'Take a selfie looking like a professional baker who just baked EVERYTHING in this shop!' } as any,
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Head baker selfie', taskPrompt: 'Take a selfie looking like a professional baker who just baked EVERYTHING in this shop!' },
       { taskType: TaskType.COUNT_TASK, missionTitle: 'Pastry count', taskPrompt: 'Count how many different types of baked goods you can see on display!', taskAnswer: '' },
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Baking riddle', taskPrompt: 'I puff up when I get hot, I\'m made of flour and yeast, and you slice me for sandwiches. What am I?', taskAnswer: 'bread' } as any,
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find the smallest treat', taskPrompt: 'Find the tiniest baked item available. Point it out and decide if it\'s still worth it!' } as any,
-      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Artsy pastry shot', taskPrompt: 'Take an artistic flat-lay photo of your snack before eating it. Food photography time!' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Baking riddle', taskPrompt: 'I puff up when I get hot, I\'m made of flour and yeast, and you slice me for sandwiches. What am I?', taskAnswer: 'bread' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the smallest treat', taskPrompt: 'Find the tiniest baked item available. Point it out and decide if it\'s still worth it!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Artsy pastry shot', taskPrompt: 'Take an artistic flat-lay photo of your snack before eating it. Food photography time!' },
     ],
     landmark: [
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Creative angle shot', taskPrompt: 'Take a photo of this landmark from the most creative or unusual angle you can find!' },
-      { taskType: TaskType.COUNT_TASK, misionTitle: 'Detail detective', taskPrompt: 'Count every decorative detail you can spot: carvings, plaques, symbols, or inscriptions!', taskAnswer: '' } as any,
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Detail detective', taskPrompt: 'Count every decorative detail you can spot: carvings, plaques, symbols, or inscriptions!', taskAnswer: '' },
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Tourist trap selfie', taskPrompt: 'Take the most over-the-top tourist selfie you can manage — huge smiles, thumbs up, the works!' },
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the oldest thing', taskPrompt: 'Find the oldest-looking or most worn part of this landmark. What do you think it has seen in all those years?' },
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Landmark riddle', taskPrompt: 'I stand still but I\'ve seen thousands of people. I\'ve been here before your grandparents were born. What am I?', taskAnswer: 'monument' } as any,
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Pose like the landmark', taskPrompt: 'Strike a pose that mirrors or matches the shape or mood of this landmark. Take a photo!' } as any,
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find an inscription', taskPrompt: 'Find any writing, date, or plaque on the landmark. Read it out loud to the group!' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Landmark riddle', taskPrompt: 'I stand still but I\'ve seen thousands of people. I\'ve been here before your grandparents were born. What am I?', taskAnswer: 'monument' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Pose like the landmark', taskPrompt: 'Strike a pose that mirrors or matches the shape or mood of this landmark. Take a photo!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find an inscription', taskPrompt: 'Find any writing, date, or plaque on the landmark. Read it out loud to the group!' },
     ],
     community: [
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Notice board discovery', taskPrompt: 'Find the notice or events board. Spot the most interesting or funniest poster and read it to the group!' } as any,
-      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Community spirit shot', taskPrompt: 'Take a photo of something that shows this place is important to the local community!' } as any,
-      { taskType: TaskType.SELFIE_TASK, misionTitle: 'Local hero selfie', taskPrompt: 'Take a selfie with the building in the background like you\'re the mayor of this neighbourhood!' } as any,
-      { taskType: TaskType.COUNT_TASK, misionTitle: 'Door count', taskPrompt: 'Count every door you can see from where you stand. How many entrances does this place have?', taskAnswer: '' } as any,
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Welcome wave', taskPrompt: 'Wave and say hello to the next person who walks past. Be as friendly as possible!' } as any,
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Community riddle', taskPrompt: 'I bring people together but I\'m not a party. I\'m free to use and open to all. What am I?', taskAnswer: 'community centre' } as any,
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Notice board discovery', taskPrompt: 'Find the notice or events board. Spot the most interesting or funniest poster and read it to the group!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Community spirit shot', taskPrompt: 'Take a photo of something that shows this place is important to the local community!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Local hero selfie', taskPrompt: 'Take a selfie with the building in the background like you\'re the mayor of this neighbourhood!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Door count', taskPrompt: 'Count every door you can see from where you stand. How many entrances does this place have?', taskAnswer: '' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Welcome wave', taskPrompt: 'Wave and say hello to the next person who walks past. Be as friendly as possible!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Community riddle', taskPrompt: 'I bring people together but I\'m not a party. I\'m free to use and open to all. What am I?', taskAnswer: 'community centre' },
     ],
     outdoor: [
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'Hidden detail', taskPrompt: 'Take a photo of something tiny or easily overlooked that most people would walk straight past!' },
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Nature detective', taskPrompt: 'Find evidence that wildlife has been here: tracks, feathers, droppings, or nibbled leaves!' },
-      { taskType: TaskType.COUNT_TASK, misionTitle: 'Tree species survey', taskPrompt: 'How many different species of trees can you identify? Look at leaf shape and bark!', taskAnswer: '' } as any,
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Tree species survey', taskPrompt: 'How many different species of trees can you identify? Look at leaf shape and bark!', taskAnswer: '' },
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Explorer selfie', taskPrompt: 'Take a selfie with the most interesting thing in the environment as your backdrop!' },
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Outdoor riddle', taskPrompt: 'I fall in autumn, blow in winter, bud in spring, and dance in summer. What am I?', taskAnswer: 'leaf' } as any,
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Sit & observe', taskPrompt: 'Sit completely still for 1 minute and count how many different sounds you hear. Anything surprising?' } as any,
-      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Sky frame', taskPrompt: 'Frame the sky through a gap between trees, buildings or your hands. Take the most artistic sky photo you can!' } as any,
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find a critter', taskPrompt: 'Find any small creature: ant, worm, beetle, snail. Observe it for 30 seconds. What is it doing?' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Outdoor riddle', taskPrompt: 'I fall in autumn, blow in winter, bud in spring, and dance in summer. What am I?', taskAnswer: 'leaf' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Sit & observe', taskPrompt: 'Sit completely still for 1 minute and count how many different sounds you hear. Anything surprising?' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Sky frame', taskPrompt: 'Frame the sky through a gap between trees, buildings or your hands. Take the most artistic sky photo you can!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a critter', taskPrompt: 'Find any small creature: ant, worm, beetle, snail. Observe it for 30 seconds. What is it doing?' },
+    ],
+    restaurant: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Menu masterpiece', taskPrompt: 'Find the most creative or funniest dish name on the menu and photograph it!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Spot the chef\'s special', taskPrompt: 'Find the chef\'s special or most recommended dish. Ask a staff member what makes it special!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Foodie selfie', taskPrompt: 'Take a selfie with your food or drink like a professional food blogger!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Table count', taskPrompt: 'How many tables can you count in this restaurant? Include indoor and outdoor!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Food riddle', taskPrompt: 'I come in many shapes, can be thin or thick, you twirl me on a fork, and I\'m often with sauce. What am I?', taskAnswer: 'pasta' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Rate the vibes', taskPrompt: 'Give this restaurant a "vibe score" from 1-10. What music is playing? What colours are on the walls? Discuss!' },
+    ],
+    museum: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Oldest exhibit', taskPrompt: 'Find the oldest item or exhibit on display. How old is it? Can you believe people used that?' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Museum mirror', taskPrompt: 'Find an exhibit and mimic its pose or shape. Take a photo side by side!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Art critic selfie', taskPrompt: 'Stand next to a painting or exhibit and take a selfie with your best "deep thinker" face!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Room count', taskPrompt: 'How many different rooms or sections does this museum have? Walk around and count!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Museum riddle', taskPrompt: 'I hang on walls but I\'m not a clock. I can be worth millions but can\'t buy anything. What am I?', taskAnswer: 'painting' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Favourite exhibit', taskPrompt: 'Each person picks their absolute favourite exhibit. Explain WHY in 10 seconds — go!' },
+    ],
+    shop: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Bargain hunter', taskPrompt: 'Find the cheapest AND the most expensive item in the shop. What\'s the price difference?' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Window display art', taskPrompt: 'Take a photo of the most eye-catching display or arrangement in the shop!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Shopping spree selfie', taskPrompt: 'Take a selfie pretending you just bought the most amazing thing ever!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Product variety', taskPrompt: 'How many completely different categories of products can you spot? Count them all!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Shop riddle', taskPrompt: 'I have aisles but I\'m not a church. I have baskets but I\'m not a picnic. Everyone comes to me but I never leave. What am I?', taskAnswer: 'shop' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Dream purchase', taskPrompt: 'If you could buy ONE thing from this shop as a gift, what would it be and for whom? Everyone shares!' },
+    ],
+    amusement: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Tallest ride', taskPrompt: 'Find the tallest or most thrilling-looking attraction. Would you dare to try it?' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Action shot', taskPrompt: 'Capture the most exciting moment — someone mid-ride, a spinning wheel, or a splash zone!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Thrill seeker selfie', taskPrompt: 'Take a selfie with the most exciting attraction in the background. Show your bravest face!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Ride count', taskPrompt: 'How many different rides or attractions can you count from where you stand?', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Fun park riddle', taskPrompt: 'I go round and round but never get dizzy. I have horses but they never eat. What am I?', taskAnswer: 'carousel' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Fun rating', taskPrompt: 'Everyone votes: what\'s the BEST thing here? Majority wins and you all go there next!' },
+    ],
+    entertainment: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Hidden gem', taskPrompt: 'Find something most visitors wouldn\'t notice — a poster, detail, or hidden corner!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Lobby art', taskPrompt: 'Take a photo of the most interesting thing in the entrance or lobby area!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Star selfie', taskPrompt: 'Take a selfie as if you\'re a movie star arriving at a premiere. Work the red carpet!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Screen or lane count', taskPrompt: 'How many screens, lanes, or activity areas does this place have?', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Entertainment riddle', taskPrompt: 'I have a big screen but I\'m not a phone. You eat popcorn watching me. What am I?', taskAnswer: 'cinema' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Movie pitch', taskPrompt: 'In 30 seconds, pitch the plot of a movie about today\'s adventure. Best pitch wins!' },
     ],
   };
 
@@ -203,28 +243,28 @@ export class HuntsService {
       { taskType: TaskType.COUNT_TASK, missionTitle: 'Petal count', taskPrompt: 'Count every different coloured flower or plant you can spot from where you stand!', taskAnswer: '' },
       { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Fairy riddle', taskPrompt: 'I am born in the morning, I dance in the breeze, I change colour in autumn and fall from the trees. What am I?', taskAnswer: 'leaf' },
       { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Make a fairy wish', taskPrompt: 'Everyone closes their eyes, makes a secret wish, and whispers it to the wind. No peeking!' },
-      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Fairy door hunt', taskPrompt: 'Find a tiny gap, hole in a tree, or small space that could be a fairy door. Leave a tiny gift if you have one!' } as any,
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Rainbow spotter', taskPrompt: 'Find something that contains ALL the colours of the rainbow in one place!' } as any,
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Fairy door hunt', taskPrompt: 'Find a tiny gap, hole in a tree, or small space that could be a fairy door. Leave a tiny gift if you have one!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Rainbow spotter', taskPrompt: 'Find something that contains ALL the colours of the rainbow in one place!' },
     ],
     unicorn: [
       { taskType: TaskType.FIND_OBJECT, missionTitle: 'Rainbow hunt', taskPrompt: 'Find something with at least 3 colours that could be part of a unicorn\'s rainbow world!' },
       { taskType: TaskType.SELFIE_TASK, missionTitle: 'Majestic unicorn pose', taskPrompt: 'Point one arm up as your horn, toss your hair, and take the most majestic unicorn selfie ever taken!' },
-      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Sparkle finder', taskPrompt: 'Find the sparkliest, shiniest, or most magical-looking thing nearby. That\'s unicorn energy!' } as any,
-      { taskType: TaskType.COUNT_TASK, misionTitle: 'Colour rainbow count', taskPrompt: 'Without moving your feet, how many different colours can you spot? Beat your record!', taskAnswer: '' } as any,
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Unicorn riddle', taskPrompt: 'I have a mane but I\'m not a lion. I have a horn but I\'m not a rhino. I poop rainbows (probably). What am I?', taskAnswer: 'unicorn' } as any,
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Magical gallop', taskPrompt: 'Everyone gallops like a unicorn in a big circle around this spot. Whoever does it most gracefully wins!' } as any,
-      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Cloud spotting', taskPrompt: 'Look up! Find a cloud that looks like a unicorn, horse, or fantasy creature. Photograph it!' } as any,
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find something purple', taskPrompt: 'Unicorns love purple! Find the most vibrant purple or pink thing nearby and show the group!' } as any,
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Sparkle finder', taskPrompt: 'Find the sparkliest, shiniest, or most magical-looking thing nearby. That\'s unicorn energy!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Colour rainbow count', taskPrompt: 'Without moving your feet, how many different colours can you spot? Beat your record!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Unicorn riddle', taskPrompt: 'I have a mane but I\'m not a lion. I have a horn but I\'m not a rhino. I poop rainbows (probably). What am I?', taskAnswer: 'unicorn' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Magical gallop', taskPrompt: 'Everyone gallops like a unicorn in a big circle around this spot. Whoever does it most gracefully wins!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Cloud spotting', taskPrompt: 'Look up! Find a cloud that looks like a unicorn, horse, or fantasy creature. Photograph it!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find something purple', taskPrompt: 'Unicorns love purple! Find the most vibrant purple or pink thing nearby and show the group!' },
     ],
     explorer: [
       { taskType: TaskType.PHOTO_TASK, missionTitle: 'New discovery', taskPrompt: 'Photograph something that looks like you\'re the first explorer to ever discover it. Give it a dramatic name!' },
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Field naturalist', taskPrompt: 'Find evidence of wildlife: tracks, feathers, nibbled plants, or burrows! Document your discovery!' } as any,
-      { taskType: TaskType.COUNT_TASK, misionTitle: 'Species survey', taskPrompt: 'How many different tree or plant species can you identify from where you stand?', taskAnswer: '' } as any,
-      { taskType: TaskType.SELFIE_TASK, misionTitle: 'Explorer\'s log photo', taskPrompt: 'Take a selfie with the most striking feature of this location as your backdrop. Log it for posterity!' } as any,
-      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Explorer\'s riddle', taskPrompt: 'I always point north but I\'m not a finger. Sailors loved me before GPS. What am I?', taskAnswer: 'compass' } as any,
-      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Sketch the map', taskPrompt: 'Everyone draws a mini map of this area on their hand or in the air. Compare — whose is most accurate?' } as any,
-      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Horizon shot', taskPrompt: 'Find the furthest point you can see from here. Photograph it like a real expedition photo!' } as any,
-      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find north', taskPrompt: 'Use the sun\'s position, shadows, or any landmark to figure out which direction is north. Point to it!' } as any,
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Field naturalist', taskPrompt: 'Find evidence of wildlife: tracks, feathers, nibbled plants, or burrows! Document your discovery!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Species survey', taskPrompt: 'How many different tree or plant species can you identify from where you stand?', taskAnswer: '' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Explorer\'s log photo', taskPrompt: 'Take a selfie with the most striking feature of this location as your backdrop. Log it for posterity!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Explorer\'s riddle', taskPrompt: 'I always point north but I\'m not a finger. Sailors loved me before GPS. What am I?', taskAnswer: 'compass' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Sketch the map', taskPrompt: 'Everyone draws a mini map of this area on their hand or in the air. Compare — whose is most accurate?' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Horizon shot', taskPrompt: 'Find the furthest point you can see from here. Photograph it like a real expedition photo!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find north', taskPrompt: 'Use the sun\'s position, shadows, or any landmark to figure out which direction is north. Point to it!' },
     ],
   };
 
@@ -330,21 +370,38 @@ export class HuntsService {
     }
 
     try {
-      // Google Places Nearby Search - fetch multiple types
+      // Google Places Nearby Search - comprehensive types for diverse hunts
       const types = [
+        // Outdoor & nature
         'park',
         'playground',
+        // Culture & attractions
         'tourist_attraction',
         'museum',
+        'art_gallery',
         'library',
+        'aquarium',
+        'zoo',
+        // Food & drink
+        'restaurant',
         'cafe',
         'bakery',
-        'store', // for toy stores, ice cream shops
+        'ice_cream_shop',
+        // Shopping & fun
+        'store',
+        'pet_store',
+        'book_store',
+        'shopping_mall',
+        // Entertainment
+        'bowling_alley',
+        'movie_theater',
+        'amusement_park',
       ];
 
       const allPlaces: any[] = [];
+      const seenPlaceIds = new Set<string>();
 
-      // Fetch places for each type
+      // Fetch places for each type (batch to avoid rate limits)
       for (const type of types) {
         try {
           const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json`;
@@ -358,35 +415,55 @@ export class HuntsService {
           const { data } = await axios.get(url, { params, timeout: 10000 });
 
           if (data.status === 'OK' && data.results) {
-            allPlaces.push(...data.results);
+            for (const place of data.results) {
+              if (!seenPlaceIds.has(place.place_id)) {
+                seenPlaceIds.add(place.place_id);
+                allPlaces.push(place);
+              }
+            }
           }
         } catch (err) {
           console.warn(`[Google Places] Failed to fetch ${type}:`, err.message);
         }
       }
 
-      console.log(`[Google Places] Found ${allPlaces.length} places`);
+      console.log(`[Google Places] Found ${allPlaces.length} unique places`);
 
       // Convert Google Places format to our POI format
-      return allPlaces.map(place => ({
-        lat: place.geometry?.location?.lat,
-        lon: place.geometry?.location?.lng,
-        tags: {
-          name: place.name,
-          leisure: place.types?.includes('park') ? 'park' :
-                   place.types?.includes('playground') ? 'playground' : undefined,
-          tourism: place.types?.includes('tourist_attraction') ? 'attraction' :
-                   place.types?.includes('museum') ? 'museum' : undefined,
-          amenity: place.types?.includes('library') ? 'library' :
-                   place.types?.includes('cafe') ? 'cafe' : undefined,
-          shop: place.types?.includes('bakery') ? 'bakery' :
-                place.types?.includes('store') ? 'store' : undefined,
-          'addr:street': place.vicinity,
-        },
-        source: 'google',
-        rating: place.rating,
-        user_ratings_total: place.user_ratings_total,
-      }));
+      return allPlaces.map(place => {
+        const t = place.types || [];
+        return {
+          lat: place.geometry?.location?.lat,
+          lon: place.geometry?.location?.lng,
+          tags: {
+            name: place.name,
+            leisure: t.includes('park') ? 'park' :
+                     t.includes('playground') ? 'playground' :
+                     t.includes('amusement_park') ? 'amusement_park' : undefined,
+            tourism: t.includes('tourist_attraction') ? 'attraction' :
+                     t.includes('museum') ? 'museum' :
+                     t.includes('art_gallery') ? 'gallery' :
+                     t.includes('aquarium') ? 'aquarium' :
+                     t.includes('zoo') ? 'zoo' : undefined,
+            amenity: t.includes('restaurant') ? 'restaurant' :
+                     t.includes('cafe') ? 'cafe' :
+                     t.includes('library') ? 'library' :
+                     t.includes('ice_cream_shop') ? 'ice_cream' :
+                     t.includes('bowling_alley') ? 'bowling_alley' :
+                     t.includes('movie_theater') ? 'cinema' : undefined,
+            shop: t.includes('bakery') ? 'bakery' :
+                  t.includes('pet_store') ? 'pet' :
+                  t.includes('book_store') ? 'books' :
+                  t.includes('shopping_mall') ? 'mall' :
+                  t.includes('store') ? 'general' : undefined,
+            'addr:street': place.vicinity,
+          },
+          source: 'google',
+          rating: place.rating,
+          user_ratings_total: place.user_ratings_total,
+          priceLevel: place.price_level || 0,
+        };
+      });
     } catch (err: any) {
       console.error('[Google Places] Error:', err.message);
       return [];
@@ -398,30 +475,42 @@ export class HuntsService {
     let score = 0;
     const tags = poi.tags || {};
 
-    // High priority locations (10 points)
+    // High priority — outdoor family fun (10 points)
     if (tags.leisure === 'playground') score += 10;
     else if (tags.leisure === 'park') score += 10;
+    else if (tags.leisure === 'amusement_park' || tags.leisure === 'water_park') score += 10;
     else if (tags.tourism === 'attraction') score += 10;
     else if (tags.tourism === 'viewpoint') score += 10;
-    else if (tags.historic === 'monument') score += 10;
+    else if (tags.tourism === 'zoo' || tags.tourism === 'aquarium') score += 10;
+    else if (tags.historic === 'monument' || tags.historic === 'castle') score += 10;
     else if (tags.historic === 'memorial') score += 10;
 
-    // Medium priority locations (7 points)
+    // Medium priority — culture, treats, entertainment (7-8 points)
+    else if (tags.tourism === 'museum' || tags.tourism === 'gallery') score += 8;
     else if (tags.amenity === 'fountain') score += 7;
     else if (tags.leisure === 'garden') score += 7;
     else if (tags.amenity === 'library') score += 7;
     else if (tags.tourism === 'artwork') score += 7;
     else if (tags.historic === 'statue') score += 7;
-
-    // Low priority locations (5 points)
-    else if (tags.amenity === 'cafe') score += 5;
     else if (tags.shop === 'ice_cream') score += 8;
-    else if (tags.shop === 'bakery') score += 5;
-    else if (tags.shop === 'toys') score += 5;
-    else if (tags.shop === 'books') score += 5;
+    else if (tags.amenity === 'bowling_alley' || tags.amenity === 'cinema') score += 7;
+
+    // Standard priority — shops, food, community (5-6 points)
+    else if (tags.amenity === 'restaurant' || tags.amenity === 'fast_food') score += 6;
+    else if (tags.amenity === 'cafe' || tags.amenity === 'ice_cream') score += 6;
+    else if (tags.shop === 'bakery') score += 6;
+    else if (tags.shop === 'toys') score += 6;
+    else if (tags.shop === 'books' || tags.shop === 'pet') score += 6;
+    else if (tags.shop === 'chocolate' || tags.shop === 'confectionery') score += 5;
+    else if (tags.shop) score += 4; // Any other shop
+    else if (tags.amenity === 'community_centre' || tags.amenity === 'arts_centre') score += 5;
 
     // Bonus for having a name (but not required)
     if (tags.name) score += 3;
+
+    // Bonus for Google rating
+    if (poi.rating && poi.rating >= 4.0) score += 3;
+    if (poi.user_ratings_total && poi.user_ratings_total > 50) score += 2;
 
     // Bonus for not visited recently (only if has name)
     if (tags.name && !previousVisits.has(tags.name)) score += 5;
@@ -522,12 +611,32 @@ export class HuntsService {
     const tags = poi.tags || {};
     if (tags.leisure === 'playground') return 'playground';
     if (tags.leisure === 'park' || tags.leisure === 'garden') return 'park';
+    if (tags.leisure === 'amusement_park' || tags.leisure === 'water_park' || tags.leisure === 'miniature_golf') return 'amusement';
     if (tags.amenity === 'fountain') return 'fountain';
     if (tags.tourism === 'attraction' || tags.tourism === 'viewpoint') return 'landmark';
+    if (tags.tourism === 'museum' || tags.tourism === 'gallery' || tags.tourism === 'aquarium') return 'museum';
+    if (tags.tourism === 'zoo') return 'amusement';
     if (tags.historic) return 'landmark';
-    if (tags.amenity === 'library') return 'community';
-    if (tags.amenity === 'cafe' || tags.shop) return 'community';
+    if (tags.amenity === 'restaurant' || tags.amenity === 'fast_food') return 'restaurant';
+    if (tags.amenity === 'cafe' || tags.amenity === 'ice_cream') return 'cafe';
+    if (tags.amenity === 'library') return 'library';
+    if (tags.amenity === 'cinema' || tags.amenity === 'bowling_alley' || tags.amenity === 'theatre') return 'entertainment';
+    if (tags.amenity === 'community_centre' || tags.amenity === 'arts_centre') return 'community';
+    if (tags.shop === 'bakery') return 'bakery';
+    if (tags.shop === 'toys') return 'toyshop';
+    if (tags.shop === 'books') return 'bookshop';
+    if (tags.shop === 'ice_cream') return 'cafe';
+    if (tags.shop) return 'shop';
     return 'outdoor';
+  }
+
+  // ── Food POI Detection ─────────────────────────────────────
+
+  private isFoodPOI(poi: any): boolean {
+    const tags = poi.tags || {};
+    const foodAmenities = ['restaurant', 'fast_food', 'cafe', 'ice_cream'];
+    const foodShops = ['bakery', 'ice_cream', 'chocolate', 'confectionery'];
+    return foodAmenities.includes(tags.amenity) || foodShops.includes(tags.shop);
   }
 
   // ── Budget & Cost Estimation ──────────────────────────────
@@ -564,12 +673,22 @@ export class HuntsService {
     // Estimate based on type
     if (tags.shop === 'ice_cream') return 5;
     if (tags.shop === 'bakery') return 8;
-    if (tags.amenity === 'cafe') return 12;
+    if (tags.amenity === 'cafe' || tags.amenity === 'ice_cream') return 10;
+    if (tags.amenity === 'restaurant') return 20;
+    if (tags.amenity === 'fast_food') return 12;
     if (tags.shop === 'toys') return 15;
     if (tags.shop === 'books') return 15;
-    if (tags.tourism === 'museum') return 10;
+    if (tags.shop === 'chocolate' || tags.shop === 'confectionery') return 8;
+    if (tags.shop === 'pet') return 10;
+    if (tags.shop === 'mall') return 20;
+    if (tags.shop) return 10; // Generic shop
+    if (tags.tourism === 'museum' || tags.tourism === 'gallery') return 12;
+    if (tags.tourism === 'zoo' || tags.tourism === 'aquarium') return 18;
     if (tags.tourism === 'attraction') return 12;
-    
+    if (tags.amenity === 'bowling_alley') return 15;
+    if (tags.amenity === 'cinema') return 15;
+    if (tags.leisure === 'amusement_park' || tags.leisure === 'water_park') return 25;
+
     return 0; // Default to free if unknown
   }
 
@@ -665,16 +784,18 @@ export class HuntsService {
     // Indoor locations
     const indoor = [
       'museum', 'library', 'cinema', 'theatre',
-      'gallery', 'aquarium', 'zoo'
+      'gallery', 'aquarium', 'bowling_alley', 'arts_centre'
     ];
     if (indoor.some(t => tags.tourism === t || tags.amenity === t)) {
       return 'indoor';
     }
-    
+
     // Mixed (can be enjoyed in any weather)
     const mixed = [
       'cafe', 'bakery', 'ice_cream', 'toys', 'books',
-      'restaurant', 'fast_food'
+      'restaurant', 'fast_food', 'pet', 'chocolate', 'confectionery',
+      'clothes', 'gift', 'supermarket', 'mall', 'general',
+      'community_centre'
     ];
     if (mixed.some(t => tags.shop === t || tags.amenity === t)) {
       return 'mixed';
@@ -746,25 +867,25 @@ export class HuntsService {
     const finaleRadius = radius + 800;
 
     // ── Build queries ──────────────────────────────────────────
-    // Comprehensive query to get more POIs
+    // Comprehensive query to get diverse POIs (parks, shops, restaurants, attractions, etc.)
     const stopsQuery = [
       `[out:json][timeout:25];`,
       `(`,
-      // Leisure
-      `node(around:${radius},${lat},${lng})[leisure~"playground|park|garden|pitch|sports_centre"];`,
-      `way(around:${radius},${lat},${lng})[leisure~"playground|park|garden|pitch"];`,
-      // Tourism
-      `node(around:${radius},${lat},${lng})[tourism~"attraction|viewpoint|artwork|museum|gallery"];`,
-      `way(around:${radius},${lat},${lng})[tourism~"attraction|museum|gallery"];`,
-      // Amenities
-      `node(around:${radius},${lat},${lng})[amenity~"fountain|library|community_centre|arts_centre"];`,
-      `way(around:${radius},${lat},${lng})[amenity~"library|community_centre|arts_centre"];`,
-      // Shops
-      `node(around:${radius},${lat},${lng})[shop~"ice_cream|bakery|toys|books|craft|chocolate|confectionery"];`,
+      // Leisure & outdoor
+      `node(around:${radius},${lat},${lng})[leisure~"playground|park|garden|pitch|sports_centre|miniature_golf|water_park"];`,
+      `way(around:${radius},${lat},${lng})[leisure~"playground|park|garden|pitch|miniature_golf"];`,
+      // Tourism & culture
+      `node(around:${radius},${lat},${lng})[tourism~"attraction|viewpoint|artwork|museum|gallery|zoo|aquarium"];`,
+      `way(around:${radius},${lat},${lng})[tourism~"attraction|museum|gallery|zoo|aquarium"];`,
+      // Amenities (community, food, entertainment)
+      `node(around:${radius},${lat},${lng})[amenity~"fountain|library|community_centre|arts_centre|restaurant|fast_food|ice_cream|cafe|cinema|theatre|bowling_alley"];`,
+      `way(around:${radius},${lat},${lng})[amenity~"library|community_centre|arts_centre|restaurant|cinema|theatre|bowling_alley"];`,
+      // Shops (diverse retail)
+      `node(around:${radius},${lat},${lng})[shop~"ice_cream|bakery|toys|books|craft|chocolate|confectionery|pet|clothes|gift|supermarket|sports|florist|farm"];`,
       // Historic
-      `node(around:${radius},${lat},${lng})[historic~"monument|memorial|statue"];`,
+      `node(around:${radius},${lat},${lng})[historic~"monument|memorial|statue|castle|ruins"];`,
       `);`,
-      `out center body 100;`,
+      `out center body 150;`,
     ].join('');
 
     const finaleQuery = [
@@ -858,8 +979,84 @@ export class HuntsService {
     
     // Order POIs into logical walking route
     pois = this.orderPOIsIntoRoute(budgetFiltered, lat, lng);
-    
+
     console.log(`[POI Processing] Selected and ordered ${pois.length} POIs`);
+
+    // ── Food stop injection (eatDuring / eatAfter) ────────────
+    const eatDuring = dto.preferences?.eatDuring === true;
+    // eatDuring=true  → food stop in the MIDDLE of the hunt
+    // eatDuring=false → food stop as the LAST stop (eat after hunt)
+
+    if (pois.length >= 3) {
+      // Separate food POIs from the valid pool (not yet selected)
+      const selectedNames = new Set(pois.map((p: any) => p.tags?.name || ''));
+      const remainingFoodPOIs = validPOIs
+        .filter(p => this.isFoodPOI(p) && p.tags?.name && !selectedNames.has(p.tags.name));
+
+      // Also check if any already-selected POI is a food place
+      const existingFoodIndices = pois
+        .map((p: any, i: number) => this.isFoodPOI(p) ? i : -1)
+        .filter(i => i >= 0);
+
+      if (eatDuring) {
+        // Place food stop at a middle position
+        const middleIndex = Math.floor(pois.length / 2);
+        const alreadyHasFoodInMiddle = existingFoodIndices.some(
+          i => i >= middleIndex - 1 && i <= middleIndex + 1
+        );
+
+        if (!alreadyHasFoodInMiddle) {
+          if (remainingFoodPOIs.length > 0) {
+            // Insert a food POI at the middle position
+            const foodPOI = remainingFoodPOIs[0];
+            foodPOI.estimatedCost = this.estimateStopCost(foodPOI);
+            foodPOI.environment = this.categorizeByEnvironment(foodPOI);
+            pois.splice(middleIndex, 0, foodPOI);
+            console.log(`[Food Stop] Inserted "${foodPOI.tags?.name}" at middle position ${middleIndex} (eatDuring=true)`);
+          } else if (existingFoodIndices.length > 0) {
+            // Move an existing food POI to the middle
+            const foodIdx = existingFoodIndices[0];
+            const [foodPOI] = pois.splice(foodIdx, 1);
+            pois.splice(middleIndex, 0, foodPOI);
+            console.log(`[Food Stop] Moved existing food POI to middle position ${middleIndex} (eatDuring=true)`);
+          } else {
+            console.log('[Food Stop] No food POIs available to insert for eatDuring');
+          }
+        } else {
+          console.log('[Food Stop] Food POI already exists near middle — no action needed');
+        }
+      } else {
+        // Place food stop as the LAST stop (eat after hunt)
+        const lastIndex = pois.length - 1;
+        const lastIsFood = existingFoodIndices.includes(lastIndex);
+
+        if (!lastIsFood) {
+          if (remainingFoodPOIs.length > 0) {
+            // Append food POI at the end
+            const foodPOI = remainingFoodPOIs[0];
+            foodPOI.estimatedCost = this.estimateStopCost(foodPOI);
+            foodPOI.environment = this.categorizeByEnvironment(foodPOI);
+            pois.push(foodPOI);
+            console.log(`[Food Stop] Appended "${foodPOI.tags?.name}" as last stop (eatAfter)`);
+          } else if (existingFoodIndices.length > 0) {
+            // Move an existing food POI to the end
+            const foodIdx = existingFoodIndices[existingFoodIndices.length - 1];
+            const [foodPOI] = pois.splice(foodIdx, 1);
+            pois.push(foodPOI);
+            console.log(`[Food Stop] Moved existing food POI to last position (eatAfter)`);
+          } else {
+            console.log('[Food Stop] No food POIs available to insert for eatAfter');
+          }
+        } else {
+          console.log('[Food Stop] Last stop is already a food POI — no action needed');
+        }
+      }
+    }
+
+    // Trim to stopCount (may have extra from food insertion)
+    if (pois.length > stopCount + 1) {
+      pois = pois.slice(0, stopCount + 1);
+    }
 
     // ── Process finale ────────────────────────────────────────
     let finaleDestination: { placeName: string; address: string; lat: number; lng: number; googleMapsLink: string; task: string } | null = null;
@@ -940,15 +1137,38 @@ export class HuntsService {
         if (tags.leisure === 'playground') stopName = 'Local Playground';
         else if (tags.leisure === 'park') stopName = 'Neighborhood Park';
         else if (tags.leisure === 'garden') stopName = 'Community Garden';
+        else if (tags.leisure === 'amusement_park') stopName = 'Fun Park';
+        else if (tags.leisure === 'water_park') stopName = 'Water Park';
+        else if (tags.leisure === 'miniature_golf') stopName = 'Mini Golf';
         else if (tags.amenity === 'fountain') stopName = 'Water Fountain';
         else if (tags.amenity === 'library') stopName = 'Public Library';
+        else if (tags.amenity === 'restaurant') stopName = 'Restaurant';
+        else if (tags.amenity === 'fast_food') stopName = 'Fast Food Spot';
+        else if (tags.amenity === 'cafe') stopName = 'Local Café';
+        else if (tags.amenity === 'ice_cream') stopName = 'Ice Cream Parlour';
+        else if (tags.amenity === 'cinema') stopName = 'Cinema';
+        else if (tags.amenity === 'bowling_alley') stopName = 'Bowling Alley';
+        else if (tags.amenity === 'theatre') stopName = 'Theatre';
+        else if (tags.amenity === 'community_centre') stopName = 'Community Centre';
+        else if (tags.amenity === 'arts_centre') stopName = 'Arts Centre';
         else if (tags.tourism === 'attraction') stopName = 'Local Attraction';
         else if (tags.tourism === 'viewpoint') stopName = 'Scenic Viewpoint';
+        else if (tags.tourism === 'museum') stopName = 'Museum';
+        else if (tags.tourism === 'gallery') stopName = 'Art Gallery';
+        else if (tags.tourism === 'zoo') stopName = 'Zoo';
+        else if (tags.tourism === 'aquarium') stopName = 'Aquarium';
         else if (tags.historic) stopName = 'Historic Site';
         else if (tags.shop === 'ice_cream') stopName = 'Ice Cream Shop';
         else if (tags.shop === 'bakery') stopName = 'Local Bakery';
         else if (tags.shop === 'toys') stopName = 'Toy Store';
-        else if (tags.amenity === 'cafe') stopName = 'Local Cafe';
+        else if (tags.shop === 'books') stopName = 'Bookshop';
+        else if (tags.shop === 'pet') stopName = 'Pet Shop';
+        else if (tags.shop === 'chocolate') stopName = 'Chocolate Shop';
+        else if (tags.shop === 'confectionery') stopName = 'Sweet Shop';
+        else if (tags.shop === 'gift') stopName = 'Gift Shop';
+        else if (tags.shop === 'florist') stopName = 'Flower Shop';
+        else if (tags.shop === 'mall') stopName = 'Shopping Mall';
+        else if (tags.shop) stopName = 'Local Shop';
         else stopName = `Stop ${idx + 1}`;
       }
       

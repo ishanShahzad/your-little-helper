@@ -71,12 +71,12 @@ export default function HuntPrefsScreen() {
         </View>
 
         {/* ── Food break ── */}
-        <Text style={[styles.sectionLabel, { marginTop: 8 }]}>FOOD BREAK PREFERENCE</Text>
-        <Text style={styles.sectionDesc}>Should we include a food stop mid-hunt?</Text>
+        <Text style={[styles.sectionLabel, { marginTop: 8 }]}>FOOD BREAK 🍽</Text>
+        <Text style={styles.sectionDesc}>We'll route you to a nearby restaurant or café — choose when!</Text>
         <View style={styles.toggleRow}>
           {[
-            { value: false, label: '🍽 Eat after', desc: 'Finish first, celebrate after' },
-            { value: true, label: '🥪 Eat during', desc: 'Include a snack stop mid-hunt' },
+            { value: false, label: '🍽 Eat after', desc: 'Last stop is a food spot — celebrate when you finish!' },
+            { value: true, label: '🥪 Eat during', desc: 'Food stop halfway through — refuel and keep going!' },
           ].map((opt) => (
             <TouchableOpacity
               key={String(opt.value)}
@@ -133,9 +133,9 @@ export default function HuntPrefsScreen() {
         <Text style={styles.sectionDesc}>What type of locations do you prefer?</Text>
         <View style={styles.environmentRow}>
           {[
-            { value: 'outdoor', label: '🌳 Outdoor', desc: 'Parks & playgrounds' },
-            { value: 'indoor', label: '🏠 Indoor', desc: 'Museums & libraries' },
-            { value: 'mixed', label: '🔀 Mixed', desc: 'Any weather works' },
+            { value: 'outdoor', label: '🌳 Outdoor', desc: 'Parks, zoos & playgrounds' },
+            { value: 'indoor', label: '🏠 Indoor', desc: 'Museums, cinemas & bowling' },
+            { value: 'mixed', label: '🔀 Mixed', desc: 'Best of both worlds!' },
           ].map((opt) => (
             <TouchableOpacity
               key={opt.value}
