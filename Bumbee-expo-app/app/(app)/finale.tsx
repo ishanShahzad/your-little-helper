@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Share, TouchableOpacity, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BeeButton } from '../../components/BeeButton';
 import { BeeCard } from '../../components/BeeCard';
@@ -16,6 +16,7 @@ export default function FinaleScreen() {
 
   const stopsCompleted = currentHunt?.stops.filter((s) => s.completed).length || currentHunt?.stops.length || 0;
   const distKm = ((currentHunt?.route?.distance || 0) / 1000).toFixed(1);
+  const totalCost = currentHunt?.totalEstimatedCost || 0;
   const giggles = Math.floor(Math.random() * 15) + 10;
   const charEmoji = currentHunt?.storyCharacterEmoji || '🐝';
   const charName = currentHunt?.storyCharacter || 'Bumbee';
@@ -39,8 +40,8 @@ export default function FinaleScreen() {
   }
 
   async function handleSendToGrandparents() {
-    const message = `🐝 Hi from Bumbee!\n\nWe just completed a ${theme} scavenger hunt with ${charName}!\n📍 ${stopsCompleted} stops visited\n🚶 ${distKm} km walked\n😄 ~${giggles} giggles estimated\n\nLove from the family! ❤️`;
-    try { await Share.share({ message }); } catch {}
+    const message = `🐝 Hi from Bumbee!\n\nWe just completed a ${theme} scavenger hunt with ${charName}!\n📍 ${stopsCompleted} stops visited\n🚶 ${distKm} km walked\n💰 $${totalCost.toFixed(0)} spent\n😄 ~${giggles} giggles estimated\n\nLove from the family! ❤️`;
+    try { await Share.share({ message }); } catch { }
   }
 
   return (
@@ -66,11 +67,38 @@ export default function FinaleScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
+            <Text style={styles.statValue}>${totalCost.toFixed(0)}</Text>
+            <Text style={styles.statLabel}>Spent</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
             <Text style={styles.statValue}>~{giggles}</Text>
             <Text style={styles.statLabel}>Giggles</Text>
           </View>
         </View>
       </BeeCard>
+
+      {/* Finale destination reward card */}
+      {currentHunt?.finale && (
+        <BeeCard style={styles.finaleCard}>
+          <Text style={styles.finaleCardTitle}>Your Reward Awaits 🏆</Text>
+          <Text style={styles.finaleVenueName}>{currentHunt.finale.placeName}</Text>
+          {!!currentHunt.finale.address && (
+            <Text style={styles.finaleAddress}>📍 {currentHunt.finale.address}</Text>
+          )}
+          <Text style={styles.finaleTask}>{currentHunt.finale.task}</Text>
+          <TouchableOpacity
+            style={styles.navigateBtn}
+            onPress={() => {
+              Linking.openURL(currentHunt.finale!.googleMapsLink).catch(() =>
+                Alert.alert('Error', 'Could not open Google Maps'),
+              );
+            }}
+          >
+            <Text style={styles.navigateBtnText}>🗺️ Navigate There</Text>
+          </TouchableOpacity>
+        </BeeCard>
+      )}
 
       {/* Photo collage placeholder */}
       {currentHunt?.stops.some(s => s.photoUrl) && (
@@ -142,4 +170,11 @@ const styles = StyleSheet.create({
   secondaryActions: { alignItems: 'center', marginBottom: 12 },
   challengeLink: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.primary },
   homeBtn: { width: '100%', marginBottom: 40 },
+  finaleCard: { marginBottom: 16, borderWidth: 2, borderColor: '#F5C518' },
+  finaleCardTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 18, color: '#F5C518', marginBottom: 6 },
+  finaleVenueName: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 4 },
+  finaleAddress: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary, fontStyle: 'italic', marginBottom: 8 },
+  finaleTask: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.text, lineHeight: 20, marginBottom: 14 },
+  navigateBtn: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20, alignItems: 'center' },
+  navigateBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' },
 });

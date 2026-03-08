@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BeeHeader } from '../../components/BeeHeader';
 import { BeeButton } from '../../components/BeeButton';
 import { useHuntStore } from '../../store/huntStore';
 import { Colors } from '../../constants/colors';
 import api from '../../services/api';
 
+/**
+ * Shared rating screen for both hunts and itineraries.
+ * Accepts optional route params: mode ('hunt' | 'itinerary') and id (itinerary id).
+ * Falls back to the current hunt in Zustand store when mode is 'hunt'.
+ */
 export default function RatingScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ mode?: string; id?: string }>();
   const { currentHunt, resetHunt } = useHuntStore();
+
+  const mode = params.mode || 'hunt';
+  const itineraryId = params.id;
+
   const [rating, setRating] = useState(0);
   const [enjoyed, setEnjoyed] = useState('');
   const [change, setChange] = useState('');
@@ -20,8 +32,19 @@ export default function RatingScreen() {
     if (!rating) return Alert.alert('Please tap a star to rate');
     setLoading(true);
     try {
-      if (currentHunt) {
-        await api.patch(`/hunts/${currentHunt._id}/rating`, { rating, feedbackText: enjoyed, wouldRecommend: recommend });
+      if (mode === 'itinerary' && itineraryId) {
+        // Rate itinerary
+        await api.patch(`/itineraries/${itineraryId}/rating`, {
+          rating,
+          feedbackText: enjoyed,
+        });
+      } else if (currentHunt) {
+        // Rate hunt + save general feedback
+        await api.patch(`/hunts/${currentHunt._id}/rating`, {
+          rating,
+          feedbackText: enjoyed,
+          wouldRecommend: recommend,
+        });
         await api.post('/feedback', {
           referenceId: currentHunt._id,
           type: 'hunt',
@@ -31,6 +54,7 @@ export default function RatingScreen() {
           wouldRecommend: recommend,
         });
       }
+
       Alert.alert('Thank you! 🐝', 'Your feedback helps us create better adventures!');
       resetHunt();
       router.replace('/(app)/mode-select');
@@ -41,11 +65,13 @@ export default function RatingScreen() {
     }
   }
 
+  const title = mode === 'itinerary' ? 'Rate Your Day' : 'Rate Your Adventure';
+
   return (
     <View style={styles.container}>
-      <BeeHeader title="Rate Your Adventure" />
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>How was it?</Text>
+      <BeeHeader title={title} />
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
+        <Text style={styles.title}>How was it? {mode === 'itinerary' ? '📅' : '🗺️'}</Text>
 
         <View style={styles.stars}>
           {[1, 2, 3, 4, 5].map((s) => (
@@ -60,18 +86,22 @@ export default function RatingScreen() {
             <Text style={styles.label}>What did your family enjoy most?</Text>
             <TextInput style={styles.textarea} multiline value={enjoyed} onChangeText={setEnjoyed} placeholder="Tell us..." placeholderTextColor={Colors.secondary} />
 
-            <Text style={styles.label}>Anything we should change?</Text>
-            <TextInput style={styles.textarea} multiline value={change} onChangeText={setChange} placeholder="Suggestions..." placeholderTextColor={Colors.secondary} />
+            {mode === 'hunt' && (
+              <>
+                <Text style={styles.label}>Anything we should change?</Text>
+                <TextInput style={styles.textarea} multiline value={change} onChangeText={setChange} placeholder="Suggestions..." placeholderTextColor={Colors.secondary} />
 
-            <Text style={styles.label}>Would you recommend Bumbee?</Text>
-            <View style={styles.yesNo}>
-              <TouchableOpacity onPress={() => setRecommend(true)} style={[styles.ynBtn, recommend === true && styles.ynActive]}>
-                <Text style={[styles.ynText, recommend === true && styles.ynTextActive]}>👍 Yes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setRecommend(false)} style={[styles.ynBtn, recommend === false && styles.ynActive]}>
-                <Text style={[styles.ynText, recommend === false && styles.ynTextActive]}>👎 No</Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.label}>Would you recommend Bumbee?</Text>
+                <View style={styles.yesNo}>
+                  <TouchableOpacity onPress={() => setRecommend(true)} style={[styles.ynBtn, recommend === true && styles.ynActive]}>
+                    <Text style={[styles.ynText, recommend === true && styles.ynTextActive]}>👍 Yes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setRecommend(false)} style={[styles.ynBtn, recommend === false && styles.ynActive]}>
+                    <Text style={[styles.ynText, recommend === false && styles.ynTextActive]}>👎 No</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </>
         )}
 

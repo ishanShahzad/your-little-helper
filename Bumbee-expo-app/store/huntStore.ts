@@ -7,6 +7,9 @@ interface HuntStop {
   lat: number;
   lng: number;
   type: string;
+  address?: string;
+  googleMapsLink?: string;
+  isFinale?: boolean;
   clue: string;
   challenge: string;
   taskType: TaskType;
@@ -17,6 +20,9 @@ interface HuntStop {
   completedAt?: string;
   photoUrl?: string;
   unlocked: boolean;
+  estimatedCost?: number;
+  priceLevel?: number;
+  environment?: string;
 }
 
 interface Hunt {
@@ -33,6 +39,18 @@ interface Hunt {
   weather: { temp: number; condition: string; icon: string };
   status: string;
   preferences?: Record<string, any>;
+  budget?: number;
+  transportMode?: string;
+  environment?: string;
+  totalEstimatedCost?: number;
+  finale?: {
+    placeName: string;
+    address: string;
+    lat: number;
+    lng: number;
+    googleMapsLink: string;
+    task: string;
+  } | null;
 }
 
 interface HuntState {
@@ -41,7 +59,14 @@ interface HuntState {
   mood: string | null;
   selectedTheme: string | null;
   durationMinutes: number;
-  huntPrefs: { treasureType: string; eatDuring: boolean; eatAfterStop: number };
+  huntPrefs: { 
+    treasureType: string; 
+    eatDuring: boolean; 
+    eatAfterStop: number;
+    budget?: number;
+    transportMode?: string;
+    environment?: string;
+  };
   currentStopIndex: number;
   hasSeenOnboarding: boolean;
   setAges: (ages: number[]) => void;
@@ -61,7 +86,14 @@ export const useHuntStore = create<HuntState>((set) => ({
   mood: null,
   selectedTheme: null,
   durationMinutes: 60,
-  huntPrefs: { treasureType: 'sticker pack', eatDuring: false, eatAfterStop: 2 },
+  huntPrefs: { 
+    treasureType: 'sticker pack', 
+    eatDuring: false, 
+    eatAfterStop: 2,
+    budget: 50,
+    transportMode: 'walking',
+    environment: 'mixed'
+  },
   currentStopIndex: 0,
   hasSeenOnboarding: false,
 

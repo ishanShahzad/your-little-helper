@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Dimensions, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, Dimensions, TouchableOpacity, TextInput, ScrollView, Animated, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import MapView, { Marker, Polyline, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -56,7 +56,10 @@ export default function LiveMapScreen() {
   const [navigationRoute, setNavigationRoute] = useState<{ latitude: number; longitude: number }[]>([]);
   const [routeDistance, setRouteDistance] = useState<number>(0);
   const [routeDuration, setRouteDuration] = useState<number>(0);
+  const [navigationInstructions, setNavigationInstructions] = useState<any[]>([]);
+  const [currentInstruction, setCurrentInstruction] = useState<string | null>(null);
   const [showMissionPanel, setShowMissionPanel] = useState(true);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
   const [countAnswer, setCountAnswer] = useState('');
   const [riddleAnswer, setRiddleAnswer] = useState('');
   const locationSub = useRef<Location.LocationSubscription | null>(null);
@@ -65,6 +68,26 @@ export default function LiveMapScreen() {
   const lastRouteFetch = useRef<number>(0);
 
   useEffect(() => { arrivedRef.current = arrived; }, [arrived]);
+
+  // Pulsing animation for location marker
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
 
   useEffect(() => {
     startHunt();
@@ -95,6 +118,18 @@ export default function LiveMapScreen() {
         setNavigationRoute(data.data.polyline);
         setRouteDistance(data.data.distance || 0);
         setRouteDuration(data.data.duration || 0);
+        setNavigationInstructions(data.data.instructions || []);
+
+        // Set current instruction (first one with distance > 0)
+        if (data.data.instructions?.length > 0) {
+          const nextInstruction = data.data.instructions.find((inst: any) => inst.distance > 0);
+          if (nextInstruction) {
+            const distanceText = nextInstruction.distance >= 1000
+              ? `${(nextInstruction.distance / 1000).toFixed(1)}km`
+              : `${Math.round(nextInstruction.distance)}m`;
+            setCurrentInstruction(`${nextInstruction.instruction} in ${distanceText}`);
+          }
+        }
       }
     } catch {
       // Fallback: straight line
@@ -102,6 +137,8 @@ export default function LiveMapScreen() {
         { latitude: fromLat, longitude: fromLng },
         { latitude: toLat, longitude: toLng },
       ]);
+      setNavigationInstructions([]);
+      setCurrentInstruction(null);
     }
   }
 
@@ -112,7 +149,7 @@ export default function LiveMapScreen() {
       await api.patch(`/hunts/${hunt._id}/track`, {
         walkedPath: walkedPath.map((p) => ({ lat: p.latitude, lng: p.longitude })),
       });
-    } catch {}
+    } catch { }
   }
 
   async function startHunt() {
@@ -131,17 +168,44 @@ export default function LiveMapScreen() {
         mood: mood || 'energetic',
         ages,
         durationMinutes,
+        budget: huntPrefs.budget || 50,
+        transportMode: huntPrefs.transportMode || 'walking',
+        environment: huntPrefs.environment || 'mixed',
         preferences: { treasureType: huntPrefs.treasureType, eatDuring: huntPrefs.eatDuring },
       });
       setHunt(data.data);
       startTracking();
     } catch (err: any) {
-      if (err.response?.data?.message === 'subscription_required') {
-        Alert.alert('Subscription Required', 'Upgrade to continue your adventures!');
-        router.back();
+      const msg = err.response?.data?.message || err.message || 'Unknown error';
+      const status = err.response?.status;
+      console.error('[startHunt] Error:', status, msg, err.response?.data);
+      
+      if (err.isNetworkError || err.isTimeout) {
+        Alert.alert(
+          err.isTimeout ? 'Connection Timeout' : 'No Internet Connection',
+          err.userMessage || 'Please check your internet connection and try again.',
+          [{ text: 'Go back', onPress: () => router.back() }]
+        );
+      } else if (msg === 'subscription_required') {
+        Alert.alert('Upgrade Required 🐝', 'You\'ve used your free hunt!\n\nUpgrade to Bumbee Premium for unlimited adventures.', [
+          { text: 'Maybe later', onPress: () => router.back(), style: 'cancel' },
+          { text: 'See Plans', onPress: () => router.back() },
+        ]);
+      } else if (msg.includes('only 0 suitable locations found') || msg.includes('no suitable locations')) {
+        Alert.alert(
+          'No Locations Found',
+          'We couldn\'t find enough interesting places in your area. This might be because:\n\n• You\'re in a remote location\n• Try a different location\n• Try changing your preferences (budget, environment)\n\nWould you like to try again?',
+          [
+            { text: 'Go back', onPress: () => router.back(), style: 'cancel' },
+            { text: 'Try Again', onPress: () => startHunt() },
+          ]
+        );
       } else {
-        Alert.alert('Error', 'Could not generate hunt. Please try again.');
-        router.back();
+        Alert.alert(
+          'Hunt Generation Failed',
+          msg || 'Could not create your adventure. Please try again.',
+          [{ text: 'Go back', onPress: () => router.back() }],
+        );
       }
     } finally {
       setLoading(false);
@@ -195,10 +259,20 @@ export default function LiveMapScreen() {
   }
 
   const getStopMarkerColor = useCallback((index: number) => {
+    const s = currentHunt?.stops[index];
     if (index < currentStopIndex) return '#4CAF50';
     if (index === currentStopIndex) return Colors.primary;
+    if (s?.isFinale) return '#F5C518'; // gold for finale
     return '#999';
-  }, [currentStopIndex]);
+  }, [currentStopIndex, currentHunt]);
+
+  async function openInMaps(link: string) {
+    try {
+      await Linking.openURL(link);
+    } catch {
+      Alert.alert('Error', 'Could not open Google Maps');
+    }
+  }
 
   if (loading) return <BeeLoader message="Generating your adventure..." />;
   if (!currentHunt) return <BeeLoader message="Loading..." />;
@@ -287,8 +361,29 @@ export default function LiveMapScreen() {
       >
         {location && (
           <>
-            <Circle center={{ latitude: location.lat, longitude: location.lng }} radius={12} fillColor="rgba(66,133,244,0.3)" strokeColor="rgba(66,133,244,0.6)" strokeWidth={1} />
-            <Circle center={{ latitude: location.lat, longitude: location.lng }} radius={5} fillColor="#4285F4" strokeColor="#fff" strokeWidth={2} />
+            {/* Animated pulsing outer circle */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                transform: [{ scale: pulseAnim }],
+              }}
+            >
+              <Circle
+                center={{ latitude: location.lat, longitude: location.lng }}
+                radius={20}
+                fillColor="rgba(66,133,244,0.2)"
+                strokeColor="rgba(66,133,244,0.4)"
+                strokeWidth={1}
+              />
+            </Animated.View>
+            {/* Static inner dot */}
+            <Circle
+              center={{ latitude: location.lat, longitude: location.lng }}
+              radius={8}
+              fillColor="#4285F4"
+              strokeColor="#fff"
+              strokeWidth={3}
+            />
           </>
         )}
 
@@ -296,8 +391,8 @@ export default function LiveMapScreen() {
           <Marker
             key={i}
             coordinate={{ latitude: s.lat, longitude: s.lng }}
-            title={i < currentStopIndex ? `✅ ${s.name}` : i === currentStopIndex ? `📍 ${s.name}` : `🔒 Stop ${i + 1}`}
-            description={i === currentStopIndex ? s.missionTitle : i < currentStopIndex ? 'Completed!' : 'Locked'}
+            title={i < currentStopIndex ? `✅ ${s.name}` : i === currentStopIndex ? `📍 ${s.name}` : s.isFinale ? `🏆 ${s.name}` : `🔒 Stop ${i + 1}`}
+            description={i === currentStopIndex ? s.missionTitle : i < currentStopIndex ? 'Completed!' : s.isFinale ? 'Finale!' : 'Locked'}
             pinColor={getStopMarkerColor(i)}
           >
             <View style={[styles.markerContainer, { backgroundColor: getStopMarkerColor(i) }]}>
@@ -324,6 +419,14 @@ export default function LiveMapScreen() {
       <TouchableOpacity style={styles.centerBtn} onPress={centerOnUser}>
         <Text style={styles.centerBtnText}>◎</Text>
       </TouchableOpacity>
+
+      {/* Turn-by-turn navigation banner */}
+      {currentInstruction && !arrived && (
+        <View style={styles.navigationBanner}>
+          <Text style={styles.navigationIcon}>🧭</Text>
+          <Text style={styles.navigationText}>{currentInstruction}</Text>
+        </View>
+      )}
 
       {/* Distance & ETA badge */}
       {distToStop !== null && (
@@ -359,7 +462,20 @@ export default function LiveMapScreen() {
             </View>
 
             <Text style={styles.stopName}>{stop?.name || 'Next Stop'}</Text>
+            {!!stop?.address && (
+              <Text style={styles.stopAddress}>📍 {stop.address}</Text>
+            )}
             <Text style={styles.missionTitle}>{stop?.missionTitle}</Text>
+
+            {/* Open in Maps */}
+            {!!stop?.googleMapsLink && (
+              <TouchableOpacity
+                style={styles.mapsBtn}
+                onPress={() => openInMaps(stop.googleMapsLink!)}
+              >
+                <Text style={styles.mapsBtnText}>🗺️ Open in Google Maps</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Clue */}
             <View style={styles.clueBox}>
@@ -436,9 +552,34 @@ const styles = StyleSheet.create({
   markerText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 13, color: '#fff' },
   centerBtn: { position: 'absolute', top: 100, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.white, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
   centerBtnText: { fontSize: 22, color: Colors.primary },
-  distBadge: { position: 'absolute', top: 100, left: 16, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
+  navigationBanner: {
+    position: 'absolute',
+    top: 100,
+    left: 16,
+    right: 70,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6
+  },
+  navigationIcon: { fontSize: 20, marginRight: 8 },
+  navigationText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: '#fff',
+    flex: 1,
+    flexWrap: 'wrap'
+  },
+  distBadge: { position: 'absolute', top: 164, left: 16, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
   distText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: '#fff' },
-  legend: { position: 'absolute', top: 152, right: 16, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, padding: 8, gap: 4 },
+  legend: { position: 'absolute', top: 164, right: 16, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, padding: 8, gap: 4 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: Colors.text },
@@ -449,6 +590,9 @@ const styles = StyleSheet.create({
   missionBadge: { alignSelf: 'flex-start', backgroundColor: Colors.backgroundAlt, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
   missionBadgeText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.primary },
   stopName: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary, marginBottom: 2 },
+  stopAddress: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginBottom: 6, fontStyle: 'italic' },
+  mapsBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.backgroundAlt, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 10, alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.border },
+  mapsBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.primary },
   missionTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 12 },
   clueBox: { backgroundColor: Colors.backgroundAlt, borderRadius: 12, padding: 14, marginBottom: 10 },
   clueLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.primary, marginBottom: 4 },

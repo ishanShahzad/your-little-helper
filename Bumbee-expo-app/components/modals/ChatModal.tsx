@@ -17,7 +17,7 @@ interface Message {
 
 export function ChatModal() {
   const visible = useAppStore((s) => s.chatModalOpen);
-  const chatRoomId = useAppStore((s) => (s as any).chatRoomId) || null;
+  const chatRoomId = useAppStore((s) => s.chatRoomId);
   const setModal = useAppStore((s) => s.setModal);
   const user = useAuthStore((s) => s.user);
   const [messages, setMessages] = useState<Message[]>([]);

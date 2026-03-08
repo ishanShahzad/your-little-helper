@@ -1,25 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BeeHeader } from '../../components/BeeHeader';
 import { useHuntStore } from '../../store/huntStore';
 import { Colors } from '../../constants/colors';
 
 const moods = [
-  { key: 'energetic', emoji: '⚡', label: 'Full of energy' },
-  { key: 'chill', emoji: '😌', label: 'Chill day' },
-  { key: 'rainy', emoji: '🌧️', label: 'Rainy day' },
-  { key: 'sick', emoji: '🤒', label: 'Under the weather' },
+  { key: 'energetic', emoji: '⚡', label: 'Full of energy', desc: 'Ready to run & explore!', bg: Colors.yellowLight, border: Colors.yellow },
+  { key: 'chill', emoji: '😌', label: 'Chill day', desc: 'Easy pace, steady fun', bg: Colors.greenLight, border: Colors.green },
+  { key: 'rainy', emoji: '🌧️', label: 'Rainy day', desc: 'Indoor-friendly ideas', bg: Colors.backgroundAlt, border: Colors.primaryLight },
+  { key: 'sick', emoji: '🤒', label: 'Under the weather', desc: 'Light, cosy activities', bg: Colors.purpleLight, border: Colors.purple },
 ];
 
 export default function MoodScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const setMood = useHuntStore((s) => s.setMood);
 
   function handleMood(mood: string) {
     setMood(mood);
+    // Rainy/sick go to itinerary, others to home for mode selection
     if (mood === 'rainy' || mood === 'sick') {
-      router.push('/(app)/mode-select');
+      router.push('/(app)/itinerary-setup');
     } else {
       router.push('/(app)/mode-select');
     }
@@ -27,29 +30,29 @@ export default function MoodScreen() {
 
   return (
     <View style={styles.container}>
-      <BeeHeader title="Mood" />
-      {/* Progress bar: Step 1 of 5 */}
-      <View style={styles.progressBar}>
-        {[1, 2, 3, 4, 5].map((step) => (
-          <View key={step} style={[styles.progressDot, step <= 1 && styles.progressActive]} />
-        ))}
-      </View>
+      <BeeHeader title="Today's Vibe" />
 
-      <View style={styles.content}>
-        <Text style={styles.title}>How's the family feeling?</Text>
-        <Text style={styles.subtitle}>This helps us pick the perfect adventure</Text>
+      <View style={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
+        <Text style={styles.headline}>How's the family feeling today?</Text>
+        <Text style={styles.subline}>This helps us match the perfect adventure for you</Text>
 
         <View style={styles.grid}>
           {moods.map((m) => (
-            <TouchableOpacity key={m.key} style={styles.card} onPress={() => handleMood(m.key)} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={m.key}
+              style={[styles.card, { backgroundColor: m.bg, borderColor: m.border }]}
+              onPress={() => handleMood(m.key)}
+              activeOpacity={0.8}
+            >
               <Text style={styles.emoji}>{m.emoji}</Text>
               <Text style={styles.label}>{m.label}</Text>
+              <Text style={styles.moddesc}>{m.desc}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <TouchableOpacity onPress={() => { setMood(null); router.push('/(app)/mode-select'); }} style={styles.skipLink}>
-          <Text style={styles.skipText}>Skip — choose manually</Text>
+        <TouchableOpacity onPress={() => { setMood(null as any); router.push('/(app)/mode-select'); }} style={styles.skipLink}>
+          <Text style={styles.skipText}>Skip — I'll choose manually →</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -58,19 +61,19 @@ export default function MoodScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  progressBar: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 12 },
-  progressDot: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border },
-  progressActive: { backgroundColor: Colors.primary },
-  content: { flex: 1, padding: 24 },
-  title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 24, color: Colors.text, marginBottom: 4, textAlign: 'center' },
-  subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary, marginBottom: 24, textAlign: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 },
+  content: { flex: 1, padding: 20 },
+  headline: { fontFamily: 'Fredoka_600SemiBold', fontSize: 26, color: Colors.text, marginBottom: 4 },
+  subline: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary, marginBottom: 24 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   card: {
-    width: '47%', aspectRatio: 1, backgroundColor: Colors.white, borderRadius: 12,
-    borderWidth: 2, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center',
+    width: '47%', borderRadius: 20, borderWidth: 2,
+    padding: 20, alignItems: 'center', justifyContent: 'center', minHeight: 130,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  emoji: { fontSize: 48, marginBottom: 8 },
-  label: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.text, textAlign: 'center' },
-  skipLink: { marginTop: 32, alignItems: 'center' },
-  skipText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.secondary, textDecorationLine: 'underline' },
+  emoji: { fontSize: 44, marginBottom: 8 },
+  label: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text, textAlign: 'center' },
+  moddesc: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.secondary, textAlign: 'center', marginTop: 4 },
+  skipLink: { alignSelf: 'center', paddingVertical: 12 },
+  skipText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.secondary },
 });

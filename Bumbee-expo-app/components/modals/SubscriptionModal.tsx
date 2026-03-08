@@ -10,7 +10,7 @@ import api from '../../services/api';
 export function SubscriptionModal() {
   const visible = useAppStore((s) => s.subscriptionModalOpen);
   const setModal = useAppStore((s) => s.setModal);
-  const { currencySymbol } = useLocale();
+  const { symbol: currencySymbol } = useLocale();
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
 

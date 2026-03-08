@@ -1,0 +1,71 @@
+export default {
+  expo: {
+    name: "Bumbee-expo-app",
+    slug: "Bumbee-expo-app",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "light",
+    scheme: "bumbee",
+    splash: {
+      image: "./assets/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
+    },
+    ios: {
+      supportsTablet: true,
+      infoPlist: {
+        NSCameraUsageDescription: "This app uses the camera to capture photos for hunts.",
+        NSPhotoLibraryUsageDescription: "This app accesses your photo library to save and share hunt photos.",
+        NSLocationWhenInUseUsageDescription: "This app uses your location to show nearby hunts and track your progress.",
+        NSLocationAlwaysAndWhenInUseUsageDescription: "This app uses your location in the background to notify you of nearby hunts.",
+        NSLocationAlwaysUsageDescription: "This app uses your location in the background to notify you of nearby hunts."
+      }
+    },
+    android: {
+      adaptiveIcon: {
+        backgroundColor: "#E6F4FE",
+        foregroundImage: "./assets/android-icon-foreground.png",
+        backgroundImage: "./assets/android-icon-background.png",
+        monochromeImage: "./assets/android-icon-monochrome.png"
+      },
+      permissions: [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    web: {
+      favicon: "./assets/favicon.png"
+    },
+    plugins: [
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission: "Allow Bumbee to use your location to show nearby hunts.",
+          locationAlwaysPermission: "Allow Bumbee to use your location in the background.",
+          locationWhenInUsePermission: "Allow Bumbee to use your location to show nearby hunts."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Allow Bumbee to access your camera to capture hunt photos."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          photosPermission: "Allow Bumbee to access your photos to save hunt memories.",
+          savePhotosPermission: "Allow Bumbee to save photos to your library."
+        }
+      ]
+    ],
+    extra: {
+      facebookAppId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID
+    }
+  }
+};

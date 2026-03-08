@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity,
+  ScrollView, Alert,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BeeHeader } from '../../components/BeeHeader';
 import { BeeCard } from '../../components/BeeCard';
 import { useAuthStore } from '../../store/authStore';
@@ -11,6 +15,7 @@ import api from '../../services/api';
 
 export default function ModeSelectScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const { mood, resetHunt } = useHuntStore();
   const setModal = useAppStore((s) => s.setModal);
@@ -32,7 +37,7 @@ export default function ModeSelectScreen() {
         const diffDays = Math.ceil((thisYearBday.getTime() - now.getTime()) / 86400000);
         if (diffDays >= 0 && diffDays <= 7) { setBirthdayKid(kid.name); break; }
       }
-    } catch {}
+    } catch { }
   }
 
   function checkSubscriptionAndGo(path: string) {
@@ -40,7 +45,6 @@ export default function ModeSelectScreen() {
       setModal('subscriptionModalOpen', true);
       return;
     }
-    // Always reset hunt when starting a new one
     resetHunt();
     router.push(path as any);
   }
@@ -54,106 +58,144 @@ export default function ModeSelectScreen() {
         setModal('subscriptionModalOpen', true);
         return;
       }
-    } catch {}
-    // Reset and go to map — will generate fresh hunt
+    } catch { }
     resetHunt();
     router.push('/(app)/live-map');
   }
 
   const streak = profile?.streaks?.currentStreak || 0;
   const hasHistory = (profile?.history?.length || 0) > 0;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
     <View style={styles.container}>
       <BeeHeader title="Bumbee" showBack={false} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.topRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Hi {user?.name || 'there'}! 👋</Text>
-            <Text style={styles.title}>Ready for an adventure?</Text>
-          </View>
-          <TouchableOpacity onPress={() => setModal('badgeGalleryOpen', true)} style={styles.badgeBtn}>
-            <Text style={styles.badgeIcon}>🏅</Text>
-          </TouchableOpacity>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Greeting ── */}
+        <View style={styles.greetingBlock}>
+          <Text style={styles.greeting}>{greeting}, {user?.name?.split(' ')[0] || 'there'} 👋</Text>
+          <Text style={styles.subtitle}>What adventure shall we create today?</Text>
         </View>
 
+        {/* ── Birthday banner ── */}
         {birthdayKid && (
-          <TouchableOpacity style={styles.birthdayBanner} onPress={() => {
-            Alert.alert('🎂 Birthday Hunt!', `Create a special birthday adventure for ${birthdayKid}?`, [
+          <TouchableOpacity
+            style={styles.birthdayBanner}
+            onPress={() => Alert.alert('🎂 Birthday Hunt!', `Create a special adventure for ${birthdayKid}?`, [
               { text: 'Not now' },
               { text: 'Yes!', onPress: () => checkSubscriptionAndGo('/(app)/ages') },
-            ]);
-          }}>
-            <Text style={styles.birthdayText}>🎂 {birthdayKid}'s birthday is coming! Create a special hunt?</Text>
+            ])}
+          >
+            <Text style={styles.birthdayEmoji}>🎂</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.birthdayTitle}>{birthdayKid}'s birthday is coming!</Text>
+              <Text style={styles.birthdayHint}>Tap to create a special birthday hunt →</Text>
+            </View>
           </TouchableOpacity>
         )}
 
+        {/* ── Streak bar ── */}
         {streak > 0 && (
           <View style={styles.streakBar}>
-            <Text style={styles.streakText}>🔥 {streak} Weekend Streak!</Text>
-            {profile?.streaks?.badges?.length > 0 && (
-              <Text style={styles.latestBadge}>{profile.streaks.badges[profile.streaks.badges.length - 1]}</Text>
-            )}
+            <Text style={styles.streakFire}>🔥</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.streakTitle}>{streak}-Weekend Streak!</Text>
+              {profile?.streaks?.badges?.length > 0 && (
+                <Text style={styles.streakBadge}>{profile.streaks.badges[profile.streaks.badges.length - 1]}</Text>
+              )}
+            </View>
+            <TouchableOpacity onPress={() => setModal('badgeGalleryOpen', true)} style={styles.badgeBtn}>
+              <Text style={styles.badgeBtnText}>🏅 Badges</Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* Main modes */}
-        <TouchableOpacity onPress={() => checkSubscriptionAndGo('/(app)/ages')} activeOpacity={0.7}>
-          <BeeCard style={styles.modeCard}>
-            <View style={styles.modeIconContainer}>
-              <Text style={styles.modeEmoji}>🗺️</Text>
-            </View>
-            <View style={styles.modeTextContainer}>
-              <Text style={styles.modeTitle}>Scavenger Hunt</Text>
-              <Text style={styles.modeDesc}>Themed outdoor adventure with clues, missions, and AR characters</Text>
-              <View style={styles.modeSteps}>
-                <Text style={styles.stepChip}>Ages → Duration → Prefs → Theme → Go!</Text>
+        {/* ── Section label ── */}
+        <Text style={styles.sectionLabel}>Choose your adventure</Text>
+
+        {/* ── Scavenger Hunt ── */}
+        <TouchableOpacity
+          onPress={() => checkSubscriptionAndGo('/(app)/ages')}
+          activeOpacity={0.85}
+          style={styles.modeCardWrap}
+        >
+          <View style={[styles.modeCard, styles.modeCardHunt]}>
+            <View style={styles.modeCardLeft}>
+              <View style={[styles.modeIconCircle, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
+                <Text style={styles.modeIconText}>🗺️</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modeCardTitle}>Scavenger Hunt</Text>
+                <Text style={styles.modeCardDesc}>Themed outdoor clues, missions & AR characters</Text>
+                <View style={styles.tagRow}>
+                  <View style={styles.tag}><Text style={styles.tagText}>📍 GPS stops</Text></View>
+                  <View style={styles.tag}><Text style={styles.tagText}>📸 Photos</Text></View>
+                  <View style={styles.tag}><Text style={styles.tagText}>🏆 Finale</Text></View>
+                </View>
               </View>
             </View>
+            <Text style={styles.modeArrow}>→</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* ── Day Planner ── */}
+        <TouchableOpacity
+          onPress={() => checkSubscriptionAndGo('/(app)/itinerary-setup')}
+          activeOpacity={0.85}
+          style={styles.modeCardWrap}
+        >
+          <BeeCard style={styles.modeCardPlanner} variant="elevated">
+            <View style={styles.modeCardLeft}>
+              <View style={[styles.modeIconCircle, { backgroundColor: Colors.backgroundAlt }]}>
+                <Text style={styles.modeIconText}>📅</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modeCardTitle, { color: Colors.text }]}>Day Planner</Text>
+                <Text style={[styles.modeCardDesc, { color: Colors.secondary }]}>
+                  {mood === 'rainy' || mood === 'sick'
+                    ? 'Indoor activities for the whole family'
+                    : 'Time-blocked family day itinerary'}
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.modeArrow, { color: Colors.primary }]}>→</Text>
           </BeeCard>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => checkSubscriptionAndGo('/(app)/itinerary-setup')} activeOpacity={0.7}>
-          <BeeCard style={styles.modeCard}>
-            <View style={styles.modeIconContainer}>
-              <Text style={styles.modeEmoji}>📅</Text>
-            </View>
-            <View style={styles.modeTextContainer}>
-              <Text style={styles.modeTitle}>Day Planner</Text>
-              <Text style={styles.modeDesc}>
-                {mood === 'rainy' || mood === 'sick' ? 'Indoor activities for the whole family' : 'Time-blocked family day itinerary'}
-              </Text>
-            </View>
-          </BeeCard>
-        </TouchableOpacity>
-
+        {/* ── One-tap repeat ── */}
         {hasHistory && (
-          <TouchableOpacity onPress={handleOneTapRepeat} style={styles.repeatBtn}>
-            <Text style={styles.repeatIcon}>🔄</Text>
-            <View>
-              <Text style={styles.repeatTitle}>One-Tap Repeat</Text>
-              <Text style={styles.repeatDesc}>Re-run your last adventure with fresh stops!</Text>
+          <TouchableOpacity onPress={handleOneTapRepeat} activeOpacity={0.85}>
+            <View style={styles.repeatCard}>
+              <Text style={styles.repeatIcon}>🔄</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.repeatTitle}>One-Tap Repeat</Text>
+                <Text style={styles.repeatDesc}>Re-run your last adventure with fresh stops!</Text>
+              </View>
+              <Text style={styles.repeatArrow}>→</Text>
             </View>
           </TouchableOpacity>
         )}
 
-        <View style={styles.links}>
-          <TouchableOpacity onPress={() => router.push('/(app)/journal')} style={styles.linkItem}>
-            <Text style={styles.linkEmoji}>📖</Text>
-            <Text style={styles.linkText}>Journal</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setModal('feedbackModalOpen', true)} style={styles.linkItem}>
-            <Text style={styles.linkEmoji}>📝</Text>
-            <Text style={styles.linkText}>Feedback</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setModal('referralModalOpen', true)} style={styles.linkItem}>
-            <Text style={styles.linkEmoji}>🎁</Text>
-            <Text style={styles.linkText}>Refer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.linkItem}>
-            <Text style={styles.linkEmoji}>👤</Text>
-            <Text style={styles.linkText}>Profile</Text>
-          </TouchableOpacity>
+        {/* ── Quick links ── */}
+        <Text style={styles.sectionLabel}>Quick links</Text>
+        <View style={styles.quickGrid}>
+          {[
+            { emoji: '📖', label: 'Journal', onPress: () => router.push('/(app)/journal') },
+            { emoji: '📝', label: 'Feedback', onPress: () => setModal('feedbackModalOpen', true) },
+            { emoji: '🎁', label: 'Refer', onPress: () => setModal('referralModalOpen', true) },
+            { emoji: '👤', label: 'Profile', onPress: () => router.push('/(app)/profile') },
+          ].map((item) => (
+            <TouchableOpacity key={item.label} style={styles.quickItem} onPress={item.onPress} activeOpacity={0.75}>
+              <View style={styles.quickIconBox}>
+                <Text style={styles.quickEmoji}>{item.emoji}</Text>
+              </View>
+              <Text style={styles.quickLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </View>
@@ -161,32 +203,85 @@ export default function ModeSelectScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.white },
-  content: { padding: 24 },
-  topRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  greeting: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.secondary },
-  title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 26, color: Colors.text, marginBottom: 16 },
-  badgeBtn: { padding: 8 },
-  badgeIcon: { fontSize: 28 },
-  birthdayBanner: { backgroundColor: Colors.backgroundAlt, borderWidth: 1.5, borderColor: Colors.accent, borderRadius: 12, padding: 14, marginBottom: 16 },
-  birthdayText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.text, textAlign: 'center' },
-  streakBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.backgroundAlt, padding: 10, borderRadius: 12, marginBottom: 16, gap: 8 },
-  streakText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.primary },
-  latestBadge: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.text },
-  modeCard: { marginBottom: 16, flexDirection: 'row', alignItems: 'center' },
-  modeIconContainer: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.backgroundAlt, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  modeEmoji: { fontSize: 28 },
-  modeTextContainer: { flex: 1 },
-  modeTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: Colors.text, marginBottom: 2 },
-  modeDesc: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.secondary },
-  modeSteps: { marginTop: 6 },
-  stepChip: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.primary, backgroundColor: Colors.backgroundAlt, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
-  repeatBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.backgroundAlt, padding: 16, borderRadius: 12, marginBottom: 16, gap: 12 },
+  container: { flex: 1, backgroundColor: Colors.background },
+  content: { padding: 20 },
+
+  greetingBlock: { marginBottom: 20 },
+  greeting: { fontFamily: 'Fredoka_600SemiBold', fontSize: 28, color: Colors.text },
+  subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: Colors.secondary, marginTop: 2 },
+
+  birthdayBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.yellowLight, borderRadius: 16,
+    padding: 14, marginBottom: 14,
+    borderWidth: 1.5, borderColor: Colors.yellow,
+  },
+  birthdayEmoji: { fontSize: 28 },
+  birthdayTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: Colors.text },
+  birthdayHint: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 2 },
+
+  streakBar: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: 16,
+    padding: 14, marginBottom: 14, gap: 10,
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
+  },
+  streakFire: { fontSize: 28 },
+  streakTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text },
+  streakBadge: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 2 },
+  badgeBtn: { backgroundColor: Colors.backgroundAlt, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  badgeBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.primary },
+
+  sectionLabel: {
+    fontFamily: 'Fredoka_600SemiBold', fontSize: 13, color: Colors.secondary,
+    textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10, marginTop: 6,
+  },
+
+  modeCardWrap: { marginBottom: 14 },
+  modeCard: {
+    borderRadius: 20, padding: 18,
+    flexDirection: 'row', alignItems: 'center',
+  },
+  modeCardHunt: {
+    backgroundColor: Colors.primaryDeep,
+    shadowColor: Colors.primaryDeep,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3, shadowRadius: 16, elevation: 8,
+  },
+  modeCardPlanner: { flexDirection: 'row', alignItems: 'center' },
+  modeCardLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, flex: 1 },
+  modeIconCircle: { width: 52, height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  modeIconText: { fontSize: 26 },
+  modeCardTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 20, color: '#fff', marginBottom: 2 },
+  modeCardDesc: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.78)', marginBottom: 8, lineHeight: 18 },
+  modeArrow: { fontSize: 20, color: 'rgba(255,255,255,0.6)', fontWeight: '700', marginLeft: 8 },
+  tagRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  tag: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  tagText: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: 'rgba(255,255,255,0.9)' },
+
+  repeatCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.surface, borderRadius: 16,
+    padding: 16, marginBottom: 20,
+    borderWidth: 1, borderColor: Colors.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+  },
   repeatIcon: { fontSize: 28 },
   repeatTitle: { fontFamily: 'Fredoka_600SemiBold', fontSize: 16, color: Colors.text },
-  repeatDesc: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary },
-  links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: Colors.border },
-  linkItem: { alignItems: 'center', gap: 4 },
-  linkEmoji: { fontSize: 22 },
-  linkText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.primary },
+  repeatDesc: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.secondary, marginTop: 2 },
+  repeatArrow: { fontSize: 18, color: Colors.grey },
+
+  quickGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  quickItem: { flex: 1, alignItems: 'center' },
+  quickIconBox: {
+    width: 56, height: 56, borderRadius: 16,
+    backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 6, elevation: 2,
+    marginBottom: 6, borderWidth: 1, borderColor: Colors.borderLight,
+  },
+  quickEmoji: { fontSize: 24 },
+  quickLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.secondary },
 });
