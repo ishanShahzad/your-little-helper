@@ -13,10 +13,16 @@ export class SubscriptionsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private configService: ConfigService,
   ) {
-    this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY')!, { apiVersion: '2025-02-24.acacia' as any });
+    const stripeKey = this.configService.get('STRIPE_SECRET_KEY');
+    if (stripeKey && stripeKey !== 'sk_test_placeholder_key_for_now') {
+      this.stripe = new Stripe(stripeKey, { apiVersion: '2025-02-24.acacia' as any });
+    }
   }
 
   async createCheckout(userId: string, priceId: string) {
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe is not configured');
+    }
     const user = await this.userModel.findById(userId);
     if (!user) throw new BadRequestException('User not found');
 
@@ -41,6 +47,9 @@ export class SubscriptionsService {
   }
 
   async handleWebhook(rawBody: Buffer, signature: string) {
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe is not configured');
+    }
     const event = this.stripe.webhooks.constructEvent(
       rawBody,
       signature,
