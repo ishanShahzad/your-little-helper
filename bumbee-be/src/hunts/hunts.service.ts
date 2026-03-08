@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -56,8 +56,6 @@ export class HuntsService {
     return map[theme] || 'playground|park|garden|bench';
   }
 
-  // ── Age-Adaptive Content ──────────────────────────────────
-
   private getAgeGroup(ages: number[]): 'toddler' | 'kid' | 'tween' {
     const avg = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : 7;
     if (avg <= 4) return 'toddler';
@@ -65,61 +63,192 @@ export class HuntsService {
     return 'tween';
   }
 
-  // ── Task Type Assignment ──────────────────────────────────
+  private buildAddress(tags: any): string {
+    const parts: string[] = [];
+    if (tags['addr:housenumber']) parts.push(tags['addr:housenumber']);
+    if (tags['addr:street']) parts.push(tags['addr:street']);
+    if (tags['addr:city']) parts.push(tags['addr:city']);
+    if (tags['addr:postcode']) parts.push(tags['addr:postcode']);
+    return parts.length > 0 ? parts.join(', ') : 'Address not available';
+  }
 
-  private readonly taskPool: Record<string, { taskType: TaskType; missionTitle: string; taskPrompt: string; taskAnswer?: string }[]> = {
-    pirate: [
-      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the hidden treasure', taskPrompt: 'Look for something that looks like buried treasure nearby!' },
-      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Strike a pirate pose', taskPrompt: 'Do your best pirate "Arrr!" pose and take a selfie!' },
-      { taskType: TaskType.COUNT_TASK, missionTitle: 'Count the cannons', taskPrompt: 'How many benches can you see from this spot?', taskAnswer: '' },
-      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Snap the X mark', taskPrompt: 'Take a photo of something that looks like an X!' },
-      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Solve the riddle', taskPrompt: 'I have 4 legs but cannot walk. What am I? Find it nearby!', taskAnswer: 'bench' },
-      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Walk the plank', taskPrompt: 'Find a log or narrow path and walk across it like a plank!' },
+
+  // ── Location-Aware Task Pool ──────────────────────────────
+
+  private readonly locationTaskPool: Record<string, { taskType: TaskType; missionTitle: string; taskPrompt: string; taskAnswer?: string }[]> = {
+    playground: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the tallest slide', taskPrompt: 'Find the tallest slide in this playground and stand at the bottom of it!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Swing count', taskPrompt: 'How many swings are in this playground? Count every single one!', taskAnswer: '' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Epic structure photo', taskPrompt: 'Take a photo of the biggest climbing structure from the ground looking up!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Flying high', taskPrompt: 'Take a selfie while spinning on the roundabout or swinging on a swing — the blurrier the better!' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Race to the top', taskPrompt: 'Race everyone in your group to the top of the climbing frame. Last one up is a rotten egg!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Playground riddle', taskPrompt: 'I go up and down but never move from my spot. Kids love me at recess. What am I?', taskAnswer: 'seesaw' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the spring rider', taskPrompt: 'Find a spring rider or rocking horse — sit on it and take a photo!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Slide count', taskPrompt: 'How many slides can you spot (include all sizes)? Ready, go!', taskAnswer: '' },
     ],
-    spy: [
-      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Sneaky surveillance', taskPrompt: 'Take a sneaky photo of something interesting without being noticed!' },
-      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find spy gadgets', taskPrompt: 'Find 3 things that could be disguised spy gadgets!' },
-      { taskType: TaskType.COUNT_TASK, missionTitle: 'Count the suspects', taskPrompt: 'How many people are wearing hats nearby?', taskAnswer: '' },
-      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Undercover selfie', taskPrompt: 'Take a selfie while trying to look as mysterious as possible!' },
-      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Crack the code', taskPrompt: 'What has hands but can\'t clap? Find it nearby!', taskAnswer: 'clock' },
-      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Silent approach', taskPrompt: 'Walk past this spot without making a sound — stealth mode!' },
+    park: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Hug a tree', taskPrompt: 'Find the widest tree you can and take a photo trying to hug it — extra points if you can\'t reach!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Wildlife watch', taskPrompt: 'Spot ANY wildlife (bird, squirrel, duck, butterfly) and freeze like a statue when you see it!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Bench scout', taskPrompt: 'Count every bench you can see from where you\'re standing. Don\'t move your feet!', taskAnswer: '' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Greenest selfie', taskPrompt: 'Take a selfie with as much green nature as possible in the background. Compete for the leafiest shot!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Nature riddle', taskPrompt: 'I have rings but no fingers, I grow tall and give you shade. You can carve your name in me. What am I?', taskAnswer: 'tree' },
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Nature walk', taskPrompt: 'Walk to the furthest corner of this park and find one natural thing that surprises you!' } as any,
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a feather', taskPrompt: 'Find a feather, leaf with an unusual shape, or a stone with an interesting pattern!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Shadow art', taskPrompt: 'Make a funny shadow pose on the ground and take a photo of it from above!' },
     ],
-    fairy: [
-      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find fairy dust', taskPrompt: 'Find the prettiest flower or sparkliest thing nearby!' },
-      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Fairy dance', taskPrompt: 'Do a fairy dance, spin 3 times, and take a selfie!' },
-      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Capture the magic', taskPrompt: 'Take a photo of something that looks magical or enchanted!' },
-      { taskType: TaskType.COUNT_TASK, missionTitle: 'Count the petals', taskPrompt: 'How many different coloured flowers can you spot?', taskAnswer: '' },
-      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Fairy riddle', taskPrompt: 'I change colour in autumn and fall to the ground. What am I?', taskAnswer: 'leaf' },
-      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Make a wish', taskPrompt: 'Find a special spot, close your eyes, and make a magical wish!' },
+    cafe: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Most colourful treat', taskPrompt: 'Order something colourful and take a photo — the more colours the better!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Menu mission', taskPrompt: 'Find the most unusual or funny item name on the menu and share it with the group!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Treat selfie', taskPrompt: 'Take a selfie holding your treat with the biggest smile you can manage!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Flavour riddle', taskPrompt: 'I am yellow, cold, and rhyme with "lime." You squeeze me but I\'m not a stress ball. What am I?', taskAnswer: 'lemon' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Seat count', taskPrompt: 'Count how many seats (chairs AND stools) are in this place. Estimate if it\'s huge!', taskAnswer: '' },
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Napkin art', taskPrompt: 'Draw your adventure character on a napkin and show the whole group. Whose is best?' } as any,
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Stack your treats', taskPrompt: 'Stack your cups, wrappers, or anything safe into a tiny tower and photograph it!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Spot the chalk board', taskPrompt: 'Find the specials board or menu sign. Read today\'s special out loud in a dramatic announcer voice!' },
     ],
-    unicorn: [
-      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the rainbow', taskPrompt: 'Find something rainbow-coloured or with at least 3 different colours!' },
-      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Majestic pose', taskPrompt: 'Strike a majestic unicorn pose with one arm as your horn!' },
-      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Sparkle search', taskPrompt: 'Take a photo of the sparkliest or most colourful thing you can find!' },
-      { taskType: TaskType.COUNT_TASK, missionTitle: 'Rainbow count', taskPrompt: 'How many different colours can you see without moving your feet?', taskAnswer: '' },
-      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Unicorn riddle', taskPrompt: 'I have a mane but I\'m not a lion. I have a horn but I\'m not a rhino. What am I?', taskAnswer: 'unicorn' },
-      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Magical gallop', taskPrompt: 'Gallop like a unicorn in a circle around this spot!' },
+    library: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Theme-coloured cover', taskPrompt: 'Find a book whose cover colour matches the colour of your adventure theme. Hold it up!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Rainbow shelf', taskPrompt: 'Find the most colourful bookshelf section and photograph it!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Shelf count', taskPrompt: 'Count every shelf visible from where you stand right now!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Library riddle', taskPrompt: 'I have pages but I\'m not a notebook. I have a spine but I\'m not a skeleton. You open me but I\'m not a door. What am I?', taskAnswer: 'book' } as any,
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Deep reader selfie', taskPrompt: 'Pick up the thickest book you can find. Take a selfie pretending you\'ve already read every word!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a globe or map', taskPrompt: 'Find a globe, atlas, or large map anywhere in the library. Touch the country you\'d most like to visit!' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Whisper challenge', taskPrompt: 'Whisper a funny sentence to each member of your group like a game of telephone. What comes out the other end?' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Tallest stack', taskPrompt: 'Stack 5 books into a tower (carefully!) and photograph it before they topple!' },
     ],
-    explorer: [
-      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Document discovery', taskPrompt: 'Take a photo of something you\'ve never noticed before!' },
-      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Nature detective', taskPrompt: 'Find animal tracks, a feather, or signs of wildlife!' },
-      { taskType: TaskType.COUNT_TASK, missionTitle: 'Tree survey', taskPrompt: 'How many different types of trees can you identify?', taskAnswer: '' },
-      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Explorer selfie', taskPrompt: 'Take a selfie with the most interesting landmark you can find!' },
-      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Map riddle', taskPrompt: 'I point north but I\'m not a finger. What am I? Find one nearby!', taskAnswer: 'compass' },
-      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Draw the map', taskPrompt: 'Draw a mini map of this area in the dirt or on paper!' },
+    bookshop: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Adventure book hunt', taskPrompt: 'Find a book with "adventure", "quest", "journey", or "secret" in the title!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Best cover award', taskPrompt: 'Find the book with the most exciting-looking cover. Take a photo and explain why it would make an amazing movie!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Bookworm selfie', taskPrompt: 'Take a selfie while pretending to be SO absorbed in a book you don\'t notice the camera!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Story riddle', taskPrompt: 'The more you take from me, the bigger I get. What am I?', taskAnswer: 'hole' },
+      { taskType: TaskType.COUNT_TASK, misionTitle: 'Section count', taskPrompt: 'How many different sections or genres can you find in this shop? Count the signs!', taskAnswer: '' } as any,
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a character like you', taskPrompt: 'Find a book whose main character shares something in common with someone in your group — same name, age, hair, or job!' },
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Dramatic reading', taskPrompt: 'Open any book to a random page and read the first full sentence out loud in the most dramatic voice possible!' } as any,
+    ],
+    toyshop: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Theme toy match', taskPrompt: 'Find a toy that best matches today\'s adventure theme. Make your case for why it fits!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Stuffed animal squad', taskPrompt: 'Gather around the fluffiest stuffed animal you can find and take a group selfie with it!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Wheels!', taskPrompt: 'Find a toy with wheels. Take a photo of it as if you\'re a car reviewer on TV!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Colour survey', taskPrompt: 'How many different colours of toy can you spot from where you\'re standing? No moving!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Toy riddle', taskPrompt: 'Kids play with me, but I\'m not a sport. I have strings but I\'m not a guitar. What am I?', taskAnswer: 'puppet' } as any,
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find the tallest toy', taskPrompt: 'Find the tallest toy in the shop. Stand next to it and compare heights!' } as any,
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Robot walk', taskPrompt: 'Do your best robot impression and walk through this aisle. Everyone joins — no exceptions!' } as any,
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Most ridiculous toy', taskPrompt: 'Find the most ridiculous or weirdest toy in the whole shop. Take a photo and award it the "What Were They Thinking?" prize!' },
+    ],
+    bakery: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Golden bake trophy', taskPrompt: 'Find the most perfectly golden-brown item in the display. Take a professional-looking food photo!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find your birthday cake', taskPrompt: 'Find the most over-the-top decorated cake or pastry. Whose birthday would this be perfect for?' },
+      { taskType: TaskType.SELFIE_TASK, misionTitle: 'Head baker selfie', taskPrompt: 'Take a selfie looking like a professional baker who just baked EVERYTHING in this shop!' } as any,
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Pastry count', taskPrompt: 'Count how many different types of baked goods you can see on display!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Baking riddle', taskPrompt: 'I puff up when I get hot, I\'m made of flour and yeast, and you slice me for sandwiches. What am I?', taskAnswer: 'bread' } as any,
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find the smallest treat', taskPrompt: 'Find the tiniest baked item available. Point it out and decide if it\'s still worth it!' } as any,
+      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Artsy pastry shot', taskPrompt: 'Take an artistic flat-lay photo of your snack before eating it. Food photography time!' } as any,
+    ],
+    landmark: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Creative angle shot', taskPrompt: 'Take a photo of this landmark from the most creative or unusual angle you can find!' },
+      { taskType: TaskType.COUNT_TASK, misionTitle: 'Detail detective', taskPrompt: 'Count every decorative detail you can spot: carvings, plaques, symbols, or inscriptions!', taskAnswer: '' } as any,
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Tourist trap selfie', taskPrompt: 'Take the most over-the-top tourist selfie you can manage — huge smiles, thumbs up, the works!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the oldest thing', taskPrompt: 'Find the oldest-looking or most worn part of this landmark. What do you think it has seen in all those years?' },
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Landmark riddle', taskPrompt: 'I stand still but I\'ve seen thousands of people. I\'ve been here before your grandparents were born. What am I?', taskAnswer: 'monument' } as any,
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Pose like the landmark', taskPrompt: 'Strike a pose that mirrors or matches the shape or mood of this landmark. Take a photo!' } as any,
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find an inscription', taskPrompt: 'Find any writing, date, or plaque on the landmark. Read it out loud to the group!' } as any,
+    ],
+    community: [
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Notice board discovery', taskPrompt: 'Find the notice or events board. Spot the most interesting or funniest poster and read it to the group!' } as any,
+      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Community spirit shot', taskPrompt: 'Take a photo of something that shows this place is important to the local community!' } as any,
+      { taskType: TaskType.SELFIE_TASK, misionTitle: 'Local hero selfie', taskPrompt: 'Take a selfie with the building in the background like you\'re the mayor of this neighbourhood!' } as any,
+      { taskType: TaskType.COUNT_TASK, misionTitle: 'Door count', taskPrompt: 'Count every door you can see from where you stand. How many entrances does this place have?', taskAnswer: '' } as any,
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Welcome wave', taskPrompt: 'Wave and say hello to the next person who walks past. Be as friendly as possible!' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Community riddle', taskPrompt: 'I bring people together but I\'m not a party. I\'m free to use and open to all. What am I?', taskAnswer: 'community centre' } as any,
+    ],
+    outdoor: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Hidden detail', taskPrompt: 'Take a photo of something tiny or easily overlooked that most people would walk straight past!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Nature detective', taskPrompt: 'Find evidence that wildlife has been here: tracks, feathers, droppings, or nibbled leaves!' },
+      { taskType: TaskType.COUNT_TASK, misionTitle: 'Tree species survey', taskPrompt: 'How many different species of trees can you identify? Look at leaf shape and bark!', taskAnswer: '' } as any,
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Explorer selfie', taskPrompt: 'Take a selfie with the most interesting thing in the environment as your backdrop!' },
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Outdoor riddle', taskPrompt: 'I fall in autumn, blow in winter, bud in spring, and dance in summer. What am I?', taskAnswer: 'leaf' } as any,
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Sit & observe', taskPrompt: 'Sit completely still for 1 minute and count how many different sounds you hear. Anything surprising?' } as any,
+      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Sky frame', taskPrompt: 'Frame the sky through a gap between trees, buildings or your hands. Take the most artistic sky photo you can!' } as any,
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find a critter', taskPrompt: 'Find any small creature: ant, worm, beetle, snail. Observe it for 30 seconds. What is it doing?' } as any,
     ],
   };
 
-  private assignTask(theme: string, stopIndex: number, ageGroup: string): { taskType: TaskType; missionTitle: string; taskPrompt: string; taskAnswer?: string } {
-    const pool = this.taskPool[theme] || this.taskPool['explorer'];
-    // Shuffle based on index to ensure variety
+  // ── Theme-Based Fallback Task Pool ────────────────────────
+
+  private readonly taskPool: Record<string, { taskType: TaskType; missionTitle: string; taskPrompt: string; taskAnswer?: string }[]> = {
+    pirate: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the buried treasure', taskPrompt: 'Ahoy! Find something that could pass as buried treasure — a shiny stone, bright object, or unusual find!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Pirate crew photo', taskPrompt: 'Every pirate needs a crew! Do your fiercest pirate "Arrr!" faces together and take a photo!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Count the cannons', taskPrompt: 'Count how many benches, bollards, or post-like objects you can spot from here. That\'s your cannon count!', taskAnswer: '' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Spot the X mark', taskPrompt: 'Find anything that looks like the letter X — crossing paths, fence patterns, signs. X marks the spot!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Pirate riddle', taskPrompt: 'I have 4 legs and a flat top. Pirates rest me on the ship deck. I can\'t walk but I hold treasure maps. What am I?', taskAnswer: 'table' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Walk the plank', taskPrompt: 'Find a narrow path, kerb, or log and walk across it heel-to-toe without falling. That\'s walking the plank!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Jolly Roger moment', taskPrompt: 'Find something black and white, or something that could double as a pirate flag. Take a photo!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find the crow\'s nest', taskPrompt: 'Find the highest point visible from here that a pirate lookout could use. Point it out and take a photo!' },
+    ],
+    spy: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Undercover surveillance', taskPrompt: 'Take a sneaky photo of something interesting without drawing attention. Spy mode activated!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Spot the gadgets', taskPrompt: 'Find 3 everyday objects that could be used as spy gadgets in disguise. A good spy sees everything!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Suspect count', taskPrompt: 'How many people nearby are wearing something on their heads? That\'s your suspect count!', taskAnswer: '' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Undercover selfie', taskPrompt: 'Take a selfie looking as mysterious and suspicious as possible. Don\'t break character!' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Spy code', taskPrompt: 'I have hands but cannot clap. I have a face but cannot smile. Spies check me constantly. What am I?', taskAnswer: 'clock' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Silent approach', taskPrompt: 'Walk 20 steps in complete silence without making a sound. True stealth mode!' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Secret drop location', taskPrompt: 'Find a spot that would make a perfect secret message drop location. Photograph it without revealing where it is!' },
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Find a shadow', taskPrompt: 'Use your shadow as your disguise! Find a spot where your shadow looks the most dramatic or mysterious.' },
+    ],
+    fairy: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Fairy dust hunt', taskPrompt: 'Find the sparkliest or most beautiful natural thing nearby — a dewy leaf, shiny stone, or bright flower!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Fairy ring dance', taskPrompt: 'Spin in a circle three times, then freeze and take a selfie. Did you find the fairy ring?' },
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'Enchanted moment', taskPrompt: 'Find something that looks like it belongs in an enchanted fairy world. Take a magical photo!' },
+      { taskType: TaskType.COUNT_TASK, missionTitle: 'Petal count', taskPrompt: 'Count every different coloured flower or plant you can spot from where you stand!', taskAnswer: '' },
+      { taskType: TaskType.ANSWER_RIDDLE, missionTitle: 'Fairy riddle', taskPrompt: 'I am born in the morning, I dance in the breeze, I change colour in autumn and fall from the trees. What am I?', taskAnswer: 'leaf' },
+      { taskType: TaskType.CHECKIN_TASK, missionTitle: 'Make a fairy wish', taskPrompt: 'Everyone closes their eyes, makes a secret wish, and whispers it to the wind. No peeking!' },
+      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Fairy door hunt', taskPrompt: 'Find a tiny gap, hole in a tree, or small space that could be a fairy door. Leave a tiny gift if you have one!' } as any,
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Rainbow spotter', taskPrompt: 'Find something that contains ALL the colours of the rainbow in one place!' } as any,
+    ],
+    unicorn: [
+      { taskType: TaskType.FIND_OBJECT, missionTitle: 'Rainbow hunt', taskPrompt: 'Find something with at least 3 colours that could be part of a unicorn\'s rainbow world!' },
+      { taskType: TaskType.SELFIE_TASK, missionTitle: 'Majestic unicorn pose', taskPrompt: 'Point one arm up as your horn, toss your hair, and take the most majestic unicorn selfie ever taken!' },
+      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Sparkle finder', taskPrompt: 'Find the sparkliest, shiniest, or most magical-looking thing nearby. That\'s unicorn energy!' } as any,
+      { taskType: TaskType.COUNT_TASK, misionTitle: 'Colour rainbow count', taskPrompt: 'Without moving your feet, how many different colours can you spot? Beat your record!', taskAnswer: '' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Unicorn riddle', taskPrompt: 'I have a mane but I\'m not a lion. I have a horn but I\'m not a rhino. I poop rainbows (probably). What am I?', taskAnswer: 'unicorn' } as any,
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Magical gallop', taskPrompt: 'Everyone gallops like a unicorn in a big circle around this spot. Whoever does it most gracefully wins!' } as any,
+      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Cloud spotting', taskPrompt: 'Look up! Find a cloud that looks like a unicorn, horse, or fantasy creature. Photograph it!' } as any,
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find something purple', taskPrompt: 'Unicorns love purple! Find the most vibrant purple or pink thing nearby and show the group!' } as any,
+    ],
+    explorer: [
+      { taskType: TaskType.PHOTO_TASK, missionTitle: 'New discovery', taskPrompt: 'Photograph something that looks like you\'re the first explorer to ever discover it. Give it a dramatic name!' },
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Field naturalist', taskPrompt: 'Find evidence of wildlife: tracks, feathers, nibbled plants, or burrows! Document your discovery!' } as any,
+      { taskType: TaskType.COUNT_TASK, misionTitle: 'Species survey', taskPrompt: 'How many different tree or plant species can you identify from where you stand?', taskAnswer: '' } as any,
+      { taskType: TaskType.SELFIE_TASK, misionTitle: 'Explorer\'s log photo', taskPrompt: 'Take a selfie with the most striking feature of this location as your backdrop. Log it for posterity!' } as any,
+      { taskType: TaskType.ANSWER_RIDDLE, misionTitle: 'Explorer\'s riddle', taskPrompt: 'I always point north but I\'m not a finger. Sailors loved me before GPS. What am I?', taskAnswer: 'compass' } as any,
+      { taskType: TaskType.CHECKIN_TASK, misionTitle: 'Sketch the map', taskPrompt: 'Everyone draws a mini map of this area on their hand or in the air. Compare — whose is most accurate?' } as any,
+      { taskType: TaskType.PHOTO_TASK, misionTitle: 'Horizon shot', taskPrompt: 'Find the furthest point you can see from here. Photograph it like a real expedition photo!' } as any,
+      { taskType: TaskType.FIND_OBJECT, misionTitle: 'Find north', taskPrompt: 'Use the sun\'s position, shadows, or any landmark to figure out which direction is north. Point to it!' } as any,
+    ],
+  };
+
+  private assignTask(
+    theme: string,
+    locationType: string,
+    stopIndex: number,
+    ageGroup: string,
+  ): { taskType: TaskType; missionTitle: string; taskPrompt: string; taskAnswer?: string } {
+    // Prefer location-aware tasks; fall back to theme-based pool
+    const locationPool = this.locationTaskPool[locationType];
+    const themePool = this.taskPool[theme] || this.taskPool['explorer'];
+    const pool = locationPool && locationPool.length > 0 ? locationPool : themePool;
+
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     const task = shuffled[stopIndex % shuffled.length];
 
-    // For last stop, always use CHECKIN_TASK (finale spot)
-    // Adapt language for toddlers
     if (ageGroup === 'toddler') {
-      return { ...task, taskPrompt: task.taskPrompt.replace(/Find|Identify|Count/g, (m) => m === 'Find' ? 'Can you find' : m === 'Identify' ? 'Can you spot' : 'How many') + ' 🎉' };
+      return {
+        ...task,
+        taskPrompt: task.taskPrompt.replace(/Find|Identify|Count/g, (m) =>
+          m === 'Find' ? 'Can you find' : m === 'Identify' ? 'Can you spot' : 'How many',
+        ) + ' 🎉',
+      };
     }
     return task;
   }
@@ -166,6 +295,410 @@ export class HuntsService {
     if (durationMinutes <= 90) return 5;
     return 6;
   }
+  // ── Overpass Retry Helper ─────────────────────────────────
+
+  private async fetchFromOverpass(query: string, primaryUrl: string, fallbackUrls: string[], timeout: number): Promise<any> {
+    const urls = [primaryUrl, ...fallbackUrls];
+
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      try {
+        console.log(`[Overpass] Trying ${url.includes('kumi') ? 'kumi.systems' : url.includes('openstreetmap.ru') ? 'openstreetmap.ru' : 'overpass-api.de'}...`);
+        const { data } = await axios.post(url, `data=${encodeURIComponent(query)}`, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          timeout,
+        });
+        console.log(`[Overpass] Success! Got ${data.elements?.length || 0} elements`);
+        return data;
+      } catch (err: any) {
+        console.warn(`[Overpass] ${url} failed:`, err.response?.status || err.code);
+        if (i === urls.length - 1) {
+          // Last attempt failed
+          throw err;
+        }
+        // Try next URL
+      }
+    }
+  }
+  // ── Google Places API Helper ──────────────────────────────
+
+  private async fetchPOIsFromGooglePlaces(lat: number, lng: number, radius: number): Promise<any[]> {
+    const googleApiKey = this.configService.get('GOOGLE_MAPS_API_KEY');
+    if (!googleApiKey || googleApiKey === 'your-google-maps-api-key-here') {
+      console.log('[Google Places] No API key configured, skipping');
+      return [];
+    }
+
+    try {
+      // Google Places Nearby Search - fetch multiple types
+      const types = [
+        'park',
+        'playground',
+        'tourist_attraction',
+        'museum',
+        'library',
+        'cafe',
+        'bakery',
+        'store', // for toy stores, ice cream shops
+      ];
+
+      const allPlaces: any[] = [];
+
+      // Fetch places for each type
+      for (const type of types) {
+        try {
+          const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json`;
+          const params = {
+            location: `${lat},${lng}`,
+            radius: radius.toString(),
+            type,
+            key: googleApiKey,
+          };
+
+          const { data } = await axios.get(url, { params, timeout: 10000 });
+
+          if (data.status === 'OK' && data.results) {
+            allPlaces.push(...data.results);
+          }
+        } catch (err) {
+          console.warn(`[Google Places] Failed to fetch ${type}:`, err.message);
+        }
+      }
+
+      console.log(`[Google Places] Found ${allPlaces.length} places`);
+
+      // Convert Google Places format to our POI format
+      return allPlaces.map(place => ({
+        lat: place.geometry?.location?.lat,
+        lon: place.geometry?.location?.lng,
+        tags: {
+          name: place.name,
+          leisure: place.types?.includes('park') ? 'park' :
+                   place.types?.includes('playground') ? 'playground' : undefined,
+          tourism: place.types?.includes('tourist_attraction') ? 'attraction' :
+                   place.types?.includes('museum') ? 'museum' : undefined,
+          amenity: place.types?.includes('library') ? 'library' :
+                   place.types?.includes('cafe') ? 'cafe' : undefined,
+          shop: place.types?.includes('bakery') ? 'bakery' :
+                place.types?.includes('store') ? 'store' : undefined,
+          'addr:street': place.vicinity,
+        },
+        source: 'google',
+        rating: place.rating,
+        user_ratings_total: place.user_ratings_total,
+      }));
+    } catch (err: any) {
+      console.error('[Google Places] Error:', err.message);
+      return [];
+    }
+  }
+  // ── POI Scoring & Filtering ───────────────────────────────
+
+  private scorePOI(poi: any, userLat: number, userLng: number, previousVisits: Set<string>): number {
+    let score = 0;
+    const tags = poi.tags || {};
+
+    // High priority locations (10 points)
+    if (tags.leisure === 'playground') score += 10;
+    else if (tags.leisure === 'park') score += 10;
+    else if (tags.tourism === 'attraction') score += 10;
+    else if (tags.tourism === 'viewpoint') score += 10;
+    else if (tags.historic === 'monument') score += 10;
+    else if (tags.historic === 'memorial') score += 10;
+
+    // Medium priority locations (7 points)
+    else if (tags.amenity === 'fountain') score += 7;
+    else if (tags.leisure === 'garden') score += 7;
+    else if (tags.amenity === 'library') score += 7;
+    else if (tags.tourism === 'artwork') score += 7;
+    else if (tags.historic === 'statue') score += 7;
+
+    // Low priority locations (5 points)
+    else if (tags.amenity === 'cafe') score += 5;
+    else if (tags.shop === 'ice_cream') score += 8;
+    else if (tags.shop === 'bakery') score += 5;
+    else if (tags.shop === 'toys') score += 5;
+    else if (tags.shop === 'books') score += 5;
+
+    // Bonus for having a name (but not required)
+    if (tags.name) score += 3;
+
+    // Bonus for not visited recently (only if has name)
+    if (tags.name && !previousVisits.has(tags.name)) score += 5;
+
+    // Distance scoring (prefer 200-800m range)
+    const dist = this.haversineDistance(userLat, userLng, poi.lat, poi.lon);
+    if (dist < 100) score -= 3; // Too close (reduced penalty)
+    else if (dist < 200) score -= 1;
+    else if (dist >= 200 && dist <= 800) score += 3; // Ideal range
+    else if (dist > 1500) score -= 3; // Too far (reduced penalty)
+
+    return score;
+  }
+
+  private haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371000; // Earth radius in meters
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+              Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  private isValidPOI(poi: any): boolean {
+    const tags = poi.tags || {};
+
+    // Must have coordinates (handle both node and way elements)
+    if (!poi.lat && !poi.center?.lat) return false;
+    if (!poi.lon && !poi.center?.lon) return false;
+    
+    // Normalize coordinates for ways
+    if (!poi.lat && poi.center) {
+      poi.lat = poi.center.lat;
+      poi.lon = poi.center.lon;
+    }
+
+    // Exclude obvious bad locations
+    if (tags.building === 'residential') return false;
+    if (tags.building === 'house') return false;
+    if (tags.building === 'apartments') return false;
+    if (tags.landuse === 'residential') return false;
+    if (tags.access === 'private') return false;
+
+    // Exclude roads/highways (but allow paths and footways)
+    if (tags.highway && !['footway', 'path', 'pedestrian'].includes(tags.highway)) return false;
+
+    // Must have at least one useful tag
+    const hasUsefulTag = tags.leisure || tags.tourism || tags.historic ||
+                         tags.amenity || tags.shop || tags.natural;
+
+    return hasUsefulTag;
+  }
+
+  private orderPOIsIntoRoute(pois: any[], startLat: number, startLng: number): any[] {
+    if (pois.length === 0) return [];
+
+    const ordered: any[] = [];
+    let currentLat = startLat;
+    let currentLng = startLng;
+    const remaining = [...pois];
+
+    while (remaining.length > 0) {
+      // Find POIs within ideal range (200-800m)
+      const candidates = remaining
+        .map(poi => ({
+          poi,
+          dist: this.haversineDistance(currentLat, currentLng, poi.lat, poi.lon)
+        }))
+        .filter(({ dist }) => dist >= 200 && dist <= 800)
+        .sort((a, b) => a.dist - b.dist);
+
+      let selected: any;
+      if (candidates.length > 0) {
+        // Pick from ideal range
+        selected = candidates[0].poi;
+      } else {
+        // No POI in ideal range, pick closest
+        const closest = remaining
+          .map(poi => ({
+            poi,
+            dist: this.haversineDistance(currentLat, currentLng, poi.lat, poi.lon)
+          }))
+          .sort((a, b) => a.dist - b.dist)[0];
+        selected = closest.poi;
+      }
+
+      ordered.push(selected);
+      remaining.splice(remaining.indexOf(selected), 1);
+      currentLat = selected.lat;
+      currentLng = selected.lon;
+    }
+
+    return ordered;
+  }
+
+  private getLocationType(poi: any): string {
+    const tags = poi.tags || {};
+    if (tags.leisure === 'playground') return 'playground';
+    if (tags.leisure === 'park' || tags.leisure === 'garden') return 'park';
+    if (tags.amenity === 'fountain') return 'fountain';
+    if (tags.tourism === 'attraction' || tags.tourism === 'viewpoint') return 'landmark';
+    if (tags.historic) return 'landmark';
+    if (tags.amenity === 'library') return 'community';
+    if (tags.amenity === 'cafe' || tags.shop) return 'community';
+    return 'outdoor';
+  }
+
+  // ── Budget & Cost Estimation ──────────────────────────────
+
+  private isFreeLocation(poi: any): boolean {
+    const tags = poi.tags || {};
+    const freeTags = [
+      'park', 'playground', 'garden', 'viewpoint',
+      'monument', 'memorial', 'fountain', 'pitch',
+      'nature_reserve', 'beach', 'picnic_site'
+    ];
+    
+    return freeTags.some(tag =>
+      tags.leisure === tag ||
+      tags.tourism === tag ||
+      tags.historic === tag ||
+      tags.natural === tag
+    );
+  }
+
+  private estimateStopCost(poi: any): number {
+    const tags = poi.tags || {};
+    
+    // Free locations
+    if (this.isFreeLocation(poi)) return 0;
+    
+    // Use Google Places price level if available (1-4)
+    if (poi.priceLevel) {
+      // Convert to dollar amount
+      const priceMap: Record<number, number> = { 1: 5, 2: 10, 3: 15, 4: 20 };
+      return priceMap[poi.priceLevel] || 10;
+    }
+    
+    // Estimate based on type
+    if (tags.shop === 'ice_cream') return 5;
+    if (tags.shop === 'bakery') return 8;
+    if (tags.amenity === 'cafe') return 12;
+    if (tags.shop === 'toys') return 15;
+    if (tags.shop === 'books') return 15;
+    if (tags.tourism === 'museum') return 10;
+    if (tags.tourism === 'attraction') return 12;
+    
+    return 0; // Default to free if unknown
+  }
+
+  private filterPOIsByBudget(pois: any[], budget: number, stopCount: number): any[] {
+    // Categorize POIs by cost
+    const free = pois.filter(p => this.isFreeLocation(p));
+    const lowCost = pois.filter(p => {
+      const cost = this.estimateStopCost(p);
+      return cost > 0 && cost <= 10;
+    });
+    const mediumCost = pois.filter(p => {
+      const cost = this.estimateStopCost(p);
+      return cost > 10 && cost <= 20;
+    });
+    const highCost = pois.filter(p => {
+      const cost = this.estimateStopCost(p);
+      return cost > 20;
+    });
+    
+    let selected: any[] = [];
+    
+    if (budget <= 10) {
+      // Very low budget: mostly free, maybe 1 low-cost
+      selected = [
+        ...free.slice(0, stopCount - 1),
+        ...lowCost.slice(0, 1)
+      ];
+    } else if (budget <= 30) {
+      // Low budget: mix of free and low-cost
+      const freeCount = Math.ceil(stopCount * 0.6);
+      const lowCount = stopCount - freeCount;
+      selected = [
+        ...free.slice(0, freeCount),
+        ...lowCost.slice(0, lowCount)
+      ];
+    } else if (budget <= 50) {
+      // Medium budget: can include some medium-cost
+      const freeCount = Math.ceil(stopCount * 0.4);
+      const lowCount = Math.ceil(stopCount * 0.3);
+      const medCount = stopCount - freeCount - lowCount;
+      selected = [
+        ...free.slice(0, freeCount),
+        ...lowCost.slice(0, lowCount),
+        ...mediumCost.slice(0, medCount)
+      ];
+    } else {
+      // High budget: all options available
+      selected = pois.slice(0, stopCount);
+    }
+    
+    // Ensure we have enough POIs
+    if (selected.length < stopCount) {
+      // Fill with any remaining POIs
+      const remaining = pois.filter(p => !selected.includes(p));
+      selected = [...selected, ...remaining.slice(0, stopCount - selected.length)];
+    }
+    
+    return selected.slice(0, stopCount);
+  }
+
+  // ── Transport Mode ────────────────────────────────────────
+
+  private getRadiusByTransport(durationMinutes: number, transportMode: string): number {
+    if (transportMode === 'car') {
+      // Car can cover more distance
+      if (durationMinutes <= 30) return 3000;  // 3km
+      if (durationMinutes <= 60) return 5000;  // 5km
+      if (durationMinutes <= 90) return 6000;  // 6km
+      return 7000; // 7km
+    } else {
+      // Walking - more conservative
+      if (durationMinutes <= 30) return 800;   // 800m
+      if (durationMinutes <= 60) return 1500;  // 1.5km
+      if (durationMinutes <= 90) return 2000;  // 2km
+      return 2500; // 2.5km
+    }
+  }
+
+  // ── Environment Filtering ─────────────────────────────────
+
+  private categorizeByEnvironment(poi: any): 'indoor' | 'outdoor' | 'mixed' {
+    const tags = poi.tags || {};
+    
+    // Outdoor locations
+    const outdoor = [
+      'park', 'playground', 'garden', 'viewpoint',
+      'pitch', 'nature_reserve', 'beach', 'picnic_site'
+    ];
+    if (outdoor.some(t => tags.leisure === t || tags.tourism === t || tags.natural === t)) {
+      return 'outdoor';
+    }
+    
+    // Indoor locations
+    const indoor = [
+      'museum', 'library', 'cinema', 'theatre',
+      'gallery', 'aquarium', 'zoo'
+    ];
+    if (indoor.some(t => tags.tourism === t || tags.amenity === t)) {
+      return 'indoor';
+    }
+    
+    // Mixed (can be enjoyed in any weather)
+    const mixed = [
+      'cafe', 'bakery', 'ice_cream', 'toys', 'books',
+      'restaurant', 'fast_food'
+    ];
+    if (mixed.some(t => tags.shop === t || tags.amenity === t)) {
+      return 'mixed';
+    }
+    
+    // Default to outdoor
+    return 'outdoor';
+  }
+
+  private filterByEnvironment(pois: any[], preference: string): any[] {
+    if (preference === 'indoor') {
+      return pois.filter(p => {
+        const env = this.categorizeByEnvironment(p);
+        return env === 'indoor' || env === 'mixed';
+      });
+    } else if (preference === 'outdoor') {
+      return pois.filter(p => {
+        const env = this.categorizeByEnvironment(p);
+        return env === 'outdoor' || env === 'mixed';
+      });
+    }
+    // 'mixed' - return all
+    return pois;
+  }
 
   // ── Main Generate ─────────────────────────────────────────
 
@@ -178,144 +711,393 @@ export class HuntsService {
       throw new ForbiddenException({ message: 'subscription_required', statusCode: 402 });
     }
 
+    // ── Safe defaults for every param ────────────────────────
+    const theme = dto.theme || 'explorer';
+    const mood = dto.mood || 'energetic';
+    const ages: number[] = dto.ages?.length ? dto.ages : [7];
     const durationMinutes = dto.durationMinutes || 60;
+    // Use London as a safe fallback so we always have valid coords for Overpass
+    const lat = (dto.lat != null && isFinite(dto.lat)) ? dto.lat : 51.5074;
+    const lng = (dto.lng != null && isFinite(dto.lng)) ? dto.lng : -0.1278;
+    
+    // NEW: Budget and transport mode with defaults
+    const budget = dto.budget || 50; // Default $50
+    const transportMode = dto.transportMode || 'walking';
+    const environment = dto.environment || 'mixed';
+
     const stopCount = this.getStopCount(durationMinutes);
-    const ageGroup = this.getAgeGroup(dto.ages);
-    const character = this.characters[dto.theme] || { name: 'Bumbee', emoji: '🐝' };
+    const ageGroup = this.getAgeGroup(ages);
+    const character = this.characters[theme] || { name: 'Bumbee', emoji: '🐝' };
 
-    // Fetch POIs from Overpass with randomization
-    const tags = this.getThemeTags(dto.theme);
-    const radius = durationMinutes <= 30 ? 1000 : durationMinutes <= 60 ? 2000 : 3000;
-    const overpassQuery = `[out:json][timeout:25];(node(around:${radius},${dto.lat},${dto.lng})[leisure~"${tags}"];node(around:${radius},${dto.lat},${dto.lng})[amenity~"playground|fountain|bench|cafe|ice_cream"];);out body 30;`;
-    const overpassUrl = this.configService.get('OVERPASS_API_URL');
-    let pois: any[] = [];
-    try {
-      const { data } = await axios.post(overpassUrl, `data=${encodeURIComponent(overpassQuery)}`, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      });
-      // Randomize POI selection to ensure different hunts at same location
-      const allPois = (data.elements || []).sort(() => Math.random() - 0.5);
+    const tags = this.getThemeTags(theme);
+    // NEW: Calculate radius based on transport mode (override manual radius if provided)
+    const radius = dto.radius 
+      ? Math.min(Math.max(dto.radius, 1000), 7000) 
+      : this.getRadiusByTransport(durationMinutes, transportMode);
+    
+    console.log(`[generate] Budget: $${budget}, Transport: ${transportMode}, Environment: ${environment}, Radius: ${radius}m`);
+    
+    const overpassUrl = this.configService.get('OVERPASS_API_URL') || 'https://overpass-api.de/api/interpreter';
+    // Fallback Overpass instances in case primary fails
+    const overpassFallbacks = [
+      'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.openstreetmap.ru/api/interpreter',
+    ];
+    const finaleRadius = radius + 800;
 
-      // Filter out previously visited POIs
-      const previousHuntIds = (user.history || []).map((h: any) => h.huntId?.toString());
-      let previousStopNames = new Set<string>();
-      if (previousHuntIds.length > 0) {
-        const recentHunts = await this.huntModel
-          .find({ _id: { $in: previousHuntIds.slice(-5) } })
-          .select('stops.name')
-          .lean();
-        recentHunts.forEach((h: any) => {
-          (h.stops || []).forEach((s: any) => previousStopNames.add(s.name));
-        });
+    // ── Build queries ──────────────────────────────────────────
+    // Comprehensive query to get more POIs
+    const stopsQuery = [
+      `[out:json][timeout:25];`,
+      `(`,
+      // Leisure
+      `node(around:${radius},${lat},${lng})[leisure~"playground|park|garden|pitch|sports_centre"];`,
+      `way(around:${radius},${lat},${lng})[leisure~"playground|park|garden|pitch"];`,
+      // Tourism
+      `node(around:${radius},${lat},${lng})[tourism~"attraction|viewpoint|artwork|museum|gallery"];`,
+      `way(around:${radius},${lat},${lng})[tourism~"attraction|museum|gallery"];`,
+      // Amenities
+      `node(around:${radius},${lat},${lng})[amenity~"fountain|library|community_centre|arts_centre"];`,
+      `way(around:${radius},${lat},${lng})[amenity~"library|community_centre|arts_centre"];`,
+      // Shops
+      `node(around:${radius},${lat},${lng})[shop~"ice_cream|bakery|toys|books|craft|chocolate|confectionery"];`,
+      // Historic
+      `node(around:${radius},${lat},${lng})[historic~"monument|memorial|statue"];`,
+      `);`,
+      `out center body 100;`,
+    ].join('');
+
+    const finaleQuery = [
+      `[out:json][timeout:12];`,
+      `(`,
+      `node(around:${finaleRadius},${lat},${lng})[amenity~"ice_cream|cafe",i][name];`,
+      `node(around:${finaleRadius},${lat},${lng})[shop~"bakery|toys|chocolate|confectionery",i][name];`,
+      `);`,
+      `out body 20;`,
+    ].join('');
+
+    const orsUrl = this.configService.get('OPENROUTE_API_URL') || 'https://api.openrouteservice.org/v2';
+    const orsKey = this.configService.get('ORS_API_KEY');
+    const meteoUrl = this.configService.get('OPEN_METEO_URL') || 'https://api.open-meteo.com/v1/forecast';
+
+    console.log(`[generate] Firing all external calls in parallel — radius=${radius} lat=${lat} lng=${lng}`);
+    const t0 = Date.now();
+
+    // ── Try Google Places first, fallback to Overpass ─────────
+    console.log('[generate] Attempting Google Places API...');
+    let googlePOIs = await this.fetchPOIsFromGooglePlaces(lat, lng, radius);
+    
+    let rawPois: any[] = [];
+    if (googlePOIs.length > 0) {
+      console.log(`[generate] Using ${googlePOIs.length} POIs from Google Places`);
+      rawPois = googlePOIs;
+    } else {
+      console.log('[generate] Google Places unavailable, falling back to Overpass...');
+      // Fallback to Overpass
+      try {
+        const overpassData = await this.fetchFromOverpass(stopsQuery, overpassUrl, overpassFallbacks, 25000);
+        rawPois = overpassData.elements || [];
+        console.log(`[generate] Got ${rawPois.length} POIs from Overpass`);
+      } catch (err) {
+        console.error('[generate] Both Google Places and Overpass failed');
+        rawPois = [];
       }
+    }
 
-      pois = allPois
-        .filter((p: any) => !previousStopNames.has(p.tags?.name))
-        .slice(0, stopCount);
-    } catch { /* fallback */ }
+    // ── Fire remaining external calls ──────────────────────────
+    const [finaleResult, weatherResult] = await Promise.allSettled([
+      // 1. Overpass/Google finale
+      googlePOIs.length > 0 
+        ? this.fetchPOIsFromGooglePlaces(lat, lng, finaleRadius)
+        : this.fetchFromOverpass(finaleQuery, overpassUrl, overpassFallbacks, 20000),
+      // 2. Open-Meteo weather (fast, ~200ms)
+      axios.get(`${meteoUrl}?latitude=${lat}&longitude=${lng}&current_weather=true`, { timeout: 8000 }),
+    ]);
 
-    // Build stops with task types
+    console.log(`[generate] All calls done in ${Date.now() - t0}ms`);
+
+    // ── Process stops ─────────────────────────────────────────
+    let pois: any[] = [];
+    console.log(`[POI Processing] Raw elements: ${rawPois.length}`);
+    
+    // Get previous visits for deduplication
+    const previousHuntIds = (user.history || []).map((h: any) => h.huntId?.toString());
+    const previousStopNames = new Set<string>();
+    if (previousHuntIds.length > 0) {
+      try {
+        const recentHunts = await this.huntModel.find({ _id: { $in: previousHuntIds.slice(-10) } }).select('stops.name').lean();
+        recentHunts.forEach((h: any) => (h.stops || []).forEach((s: any) => previousStopNames.add(s.name)));
+      } catch { /* non-fatal */ }
+    }
+    
+    // Filter valid POIs and score them
+    const validPOIs = rawPois
+      .filter(poi => this.isValidPOI(poi))
+      .map(poi => ({
+        ...poi,
+        score: this.scorePOI(poi, lat, lng, previousStopNames),
+        estimatedCost: this.estimateStopCost(poi),
+        environment: this.categorizeByEnvironment(poi)
+      }))
+      .sort((a, b) => b.score - a.score);
+    
+    console.log(`[POI Processing] Valid POIs after filtering: ${validPOIs.length}`);
+    
+    // NEW: Filter by environment preference
+    const envFiltered = this.filterByEnvironment(validPOIs, environment);
+    console.log(`[POI Processing] After environment filter (${environment}): ${envFiltered.length}`);
+    
+    // NEW: Filter by budget
+    const budgetFiltered = this.filterPOIsByBudget(envFiltered, budget, stopCount);
+    console.log(`[POI Processing] After budget filter ($${budget}): ${budgetFiltered.length}`);
+    
+    // If insufficient POIs, try expanding radius
+    if (budgetFiltered.length < stopCount) {
+      console.warn(`[POI Processing] Only ${budgetFiltered.length} POIs found, need ${stopCount}. Consider expanding search.`);
+    }
+    
+    // Order POIs into logical walking route
+    pois = this.orderPOIsIntoRoute(budgetFiltered, lat, lng);
+    
+    console.log(`[POI Processing] Selected and ordered ${pois.length} POIs`);
+
+    // ── Process finale ────────────────────────────────────────
+    let finaleDestination: { placeName: string; address: string; lat: number; lng: number; googleMapsLink: string; task: string } | null = null;
+    if (finaleResult.status === 'fulfilled') {
+      // Handle both Google Places array and Overpass object format
+      const finaleData = finaleResult.value;
+      const finaleOptions = Array.isArray(finaleData) ? finaleData : (finaleData.elements || []);
+      
+      const validFinaleOptions = finaleOptions
+        .filter((p: any) => p.tags?.name && this.isValidPOI(p))
+        .sort(() => Math.random() - 0.5);
+      
+      const stopNames = new Set(pois.map((p: any) => p.tags?.name || ''));
+      const treasureType = dto.preferences?.treasureType || 'edible';
+      
+      // Match finale to treasure preference
+      let finalePoi: any = null;
+      if (treasureType === 'edible') {
+        finalePoi = validFinaleOptions.find((p: any) => p.tags?.shop === 'ice_cream') ||
+                    validFinaleOptions.find((p: any) => p.tags?.shop === 'bakery') ||
+                    validFinaleOptions.find((p: any) => p.tags?.amenity === 'cafe') ||
+                    validFinaleOptions.find((p: any) => p.tags?.shop === 'chocolate');
+      } else if (treasureType === 'toy') {
+        finalePoi = validFinaleOptions.find((p: any) => p.tags?.shop === 'toys') ||
+                    validFinaleOptions.find((p: any) => p.tags?.shop === 'books');
+      } else {
+        // Mystery or other - pick any good finale
+        finalePoi = validFinaleOptions[0];
+      }
+      
+      // Ensure finale is not already in stops
+      if (finalePoi && stopNames.has(finalePoi.tags?.name)) {
+        finalePoi = validFinaleOptions.find((p: any) => !stopNames.has(p.tags?.name));
+      }
+      
+      if (finalePoi) {
+        const finaleType = finalePoi.tags?.amenity || finalePoi.tags?.shop || 'reward';
+        const finaleTasks: Record<string, string> = {
+          ice_cream: 'Celebrate with a delicious ice cream — you earned it! 🍦',
+          cafe: 'Reward yourselves — pick your favourite treat from the menu! ☕🍰',
+          bakery: 'Pick the most tempting baked good as your adventure reward! 🥐',
+          toys: 'Choose your reward toy — you completed the whole adventure! 🧸',
+          books: 'Pick a new book as your treasure — knowledge is power! 📚',
+          chocolate: 'Pick your favourite chocolate as your treasure reward! 🍫',
+          confectionery: 'Celebrate with something sweet — you finished the hunt! 🍬',
+        };
+        finaleDestination = {
+          placeName: finalePoi.tags.name,
+          address: this.buildAddress(finalePoi.tags),
+          lat: finalePoi.lat,
+          lng: finalePoi.lon,
+          googleMapsLink: `https://www.google.com/maps/dir/?api=1&destination=${finalePoi.lat},${finalePoi.lon}`,
+          task: finaleTasks[finaleType] || 'Celebrate the end of your adventure! 🎉',
+        };
+        console.log(`[Finale] Found: ${finalePoi.tags.name} (type: ${finaleType})`);
+      } else {
+        console.log('[Finale] No reward venue found nearby');
+      }
+    } else {
+      console.warn('[Finale] Query failed:', (finaleResult as any).reason?.message);
+    }
+
+    // ── Process weather ───────────────────────────────────────
+    let weather = { temp: 0, condition: 'unknown', icon: '' };
+    if (weatherResult.status === 'fulfilled') {
+      const cw = weatherResult.value.data.current_weather;
+      weather = { temp: cw?.temperature || 0, condition: cw?.weathercode?.toString() || '', icon: '' };
+    } else {
+      console.warn('[Weather] Failed:', (weatherResult as any).reason?.message);
+    }
+
+    // ── Build stops array ─────────────────────────────────────
     const stops = pois.map((poi: any, idx: number) => {
-      const stopName = poi.tags?.name || `Mystery Spot ${idx + 1}`;
-      const task = this.assignTask(dto.theme, idx, ageGroup);
-      const isFinale = idx === Math.min(pois.length, stopCount) - 1;
-
+      // Generate fallback name if POI doesn't have one
+      let stopName = poi.tags?.name;
+      if (!stopName) {
+        const tags = poi.tags || {};
+        if (tags.leisure === 'playground') stopName = 'Local Playground';
+        else if (tags.leisure === 'park') stopName = 'Neighborhood Park';
+        else if (tags.leisure === 'garden') stopName = 'Community Garden';
+        else if (tags.amenity === 'fountain') stopName = 'Water Fountain';
+        else if (tags.amenity === 'library') stopName = 'Public Library';
+        else if (tags.tourism === 'attraction') stopName = 'Local Attraction';
+        else if (tags.tourism === 'viewpoint') stopName = 'Scenic Viewpoint';
+        else if (tags.historic) stopName = 'Historic Site';
+        else if (tags.shop === 'ice_cream') stopName = 'Ice Cream Shop';
+        else if (tags.shop === 'bakery') stopName = 'Local Bakery';
+        else if (tags.shop === 'toys') stopName = 'Toy Store';
+        else if (tags.amenity === 'cafe') stopName = 'Local Cafe';
+        else stopName = `Stop ${idx + 1}`;
+      }
+      
+      const locationType = this.getLocationType(poi);
+      const task = this.assignTask(theme, locationType, idx, ageGroup);
+      const poisLat = poi.lat ?? lat;
+      const poisLng = poi.lon ?? lng;
       return {
         name: stopName,
-        lat: poi.lat,
-        lng: poi.lon,
-        type: poi.tags?.leisure || poi.tags?.amenity || 'point',
-        clue: this.generateClue(dto.theme, stopName, ageGroup),
-        challenge: isFinale ? `🎉 Final challenge! ${task.taskPrompt}` : task.taskPrompt,
-        taskType: isFinale ? TaskType.CHECKIN_TASK : task.taskType,
+        lat: poisLat,
+        lng: poisLng,
+        address: this.buildAddress(poi.tags || {}),
+        googleMapsLink: `https://www.google.com/maps/dir/?api=1&destination=${poisLat},${poisLng}`,
+        type: poi.tags?.leisure || poi.tags?.amenity || poi.tags?.shop || 'point',
+        isFinale: false,
+        clue: this.generateClue(theme, stopName, ageGroup),
+        challenge: task.taskPrompt,
+        taskType: task.taskType,
         taskPrompt: task.taskPrompt,
         taskAnswer: task.taskAnswer || '',
-        missionTitle: isFinale ? '🏆 Claim Your Treasure!' : task.missionTitle,
-        completed: false,
-        unlocked: idx === 0, // Only first stop is unlocked
-      };
-    });
-
-    // Fallback if not enough POIs
-    while (stops.length < stopCount) {
-      const offset = stops.length * 0.002 * (Math.random() > 0.5 ? 1 : -1);
-      const idx = stops.length;
-      const task = this.assignTask(dto.theme, idx, ageGroup);
-      const isFinale = idx === stopCount - 1;
-
-      stops.push({
-        name: `Mystery Spot ${idx + 1}`,
-        lat: dto.lat + offset + (Math.random() * 0.001),
-        lng: dto.lng + offset + (Math.random() * 0.001),
-        type: 'mystery',
-        clue: this.generateClue(dto.theme, 'this mystery spot', ageGroup),
-        challenge: isFinale ? `🎉 Final challenge! ${task.taskPrompt}` : task.taskPrompt,
-        taskType: isFinale ? TaskType.CHECKIN_TASK : task.taskType,
-        taskPrompt: task.taskPrompt,
-        taskAnswer: task.taskAnswer || '',
-        missionTitle: isFinale ? '🏆 Claim Your Treasure!' : task.missionTitle,
+        missionTitle: task.missionTitle,
         completed: false,
         unlocked: idx === 0,
-      });
-    }
-
-    // Get walking route
-    let route = { distance: 0, duration: 0, polyline: '' };
-    try {
-      const coords = stops.map((s: any) => [s.lng, s.lat]);
-      const { data: routeData } = await axios.post(
-        `${this.configService.get('OPENROUTE_API_URL')}/directions/foot-walking`,
-        { coordinates: coords },
-        {
-          headers: {
-            Authorization: `Bearer ${this.configService.get('OPENROUTE_API_KEY')}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-      const routeObj = routeData.routes?.[0];
-      if (routeObj) {
-        route = {
-          distance: routeObj.summary?.distance || 0,
-          duration: routeObj.summary?.duration || 0,
-          polyline: routeObj.geometry || '',
-        };
-      }
-    } catch (err) {
-      console.log('OpenRouteService error:', err?.message);
-    }
-
-    // Get weather
-    let weather = { temp: 0, condition: 'unknown', icon: '' };
-    try {
-      const { data: meteo } = await axios.get(
-        `${this.configService.get('OPEN_METEO_URL')}?latitude=${dto.lat}&longitude=${dto.lng}&current_weather=true`,
-      );
-      const cw = meteo.current_weather;
-      weather = { temp: cw?.temperature || 0, condition: cw?.weathercode?.toString() || '', icon: '' };
-    } catch { /* fallback */ }
-
-    const storyIntro = this.generateStoryIntro(dto.theme, character.name);
-
-    const hunt = await this.huntModel.create({
-      userId,
-      theme: dto.theme,
-      mood: dto.mood,
-      ages: dto.ages,
-      durationMinutes,
-      storyIntro,
-      storyCharacter: character.name,
-      storyCharacterEmoji: character.emoji,
-      stops,
-      route,
-      weather,
-      preferences: dto.preferences || {},
+        
+        // NEW: Cost and environment info
+        estimatedCost: poi.estimatedCost || 0,
+        priceLevel: poi.priceLevel || 0,
+        environment: poi.environment || 'outdoor'
+      };
     });
+    
+    // NEW: Calculate total cost
+    const totalEstimatedCost = stops.reduce((sum, s) => sum + (s.estimatedCost || 0), 0);
+    
+    console.log(`[generate] Total estimated cost: $${totalEstimatedCost} (budget: $${budget})`);
 
+    // ── Check if we have enough POIs ─────────────────────────
+    if (stops.length < 3) {
+      throw new BadRequestException(
+        `Unable to generate hunt: only ${stops.length} suitable locations found in your area. ` +
+        `Try a different location or increase the search radius.`
+      );
+    }
+    
+    // If we have fewer stops than requested, that's okay - just log it
+    if (stops.length < stopCount) {
+      console.log(`[generate] Generated ${stops.length} stops (requested ${stopCount})`);
+    } else {
+      console.log(`[generate] Generated ${stops.length} real POI stops`);
+    }
+
+    // ── Walking route (after stops are built, non-blocking if slow) ──
+    let route = { distance: 0, duration: 0, polyline: '' };
+    if (orsKey) {
+      try {
+        const coords = stops.map((s: any) => [s.lng, s.lat]);
+        const { data: routeData } = await axios.post(
+          `${orsUrl}/directions/foot-walking`,
+          { coordinates: coords },
+          { headers: { Authorization: `Bearer ${orsKey}`, 'Content-Type': 'application/json' }, timeout: 10000 },
+        );
+        const rObj = routeData.routes?.[0];
+        if (rObj) {
+          route = {
+            distance: Math.round(rObj.summary?.distance || 0),
+            duration: Math.round(rObj.summary?.duration || 0),
+            polyline: rObj.geometry || '',
+          };
+          console.log(`[ORS] Route: ${route.distance}m`);
+        }
+      } catch (orsErr: any) {
+        console.warn('[ORS] Route skipped:', orsErr?.response?.status, orsErr?.message);
+      }
+    } else {
+      console.warn('[ORS] No API key — skipping route');
+    }
+
+    const storyIntro = this.generateStoryIntro(theme, character.name);
+
+    console.log(`[generate] Creating hunt: theme=${theme} stops=${stops.length} userId=${userId}`);
+
+    let hunt: any;
+    try {
+      hunt = await this.huntModel.create({
+        userId,
+        theme,
+        mood,
+        ages,
+        durationMinutes,
+        storyIntro,
+        storyCharacter: character.name,
+        storyCharacterEmoji: character.emoji,
+        stops,
+        route,
+        weather,
+        finale: finaleDestination,
+        preferences: dto.preferences || {},
+        
+        // NEW FIELDS
+        budget,
+        transportMode,
+        environment,
+        totalEstimatedCost
+      });
+    } catch (dbErr: any) {
+      console.error('[generate] DB create failed:', dbErr?.message);
+      throw new Error('Failed to save hunt to database: ' + dbErr?.message);
+    }
+
+    console.log(`[generate] Hunt created: ${hunt._id}`);
     return hunt.toObject();
   }
 
   // ── Existing methods ──────────────────────────────────────
+
+  async getHistory(userId: string) {
+    const user = await this.userModel.findById(userId).select('history').lean();
+    const history = user?.history || [];
+    if (history.length === 0) return [];
+
+    const huntIds = history
+      .slice(-20)                             // last 20 entries
+      .map((h: any) => h.huntId)
+      .filter(Boolean);
+
+    const hunts = await this.huntModel
+      .find({ _id: { $in: huntIds } })
+      .select('theme storyCharacterEmoji stops route rating completedAt createdAt')
+      .lean();
+
+    // Sort newest-first
+    const idOrder = new Map(history.map((h: any, i: number) => [h.huntId?.toString(), i]));
+    return hunts
+      .sort((a: any, b: any) => {
+        const ai = idOrder.get(a._id.toString()) ?? 999;
+        const bi = idOrder.get(b._id.toString()) ?? 999;
+        return bi - ai;
+      })
+      .map((h: any) => ({
+        _id: h._id,
+        theme: h.theme,
+        charEmoji: h.storyCharacterEmoji || '🐝',
+        stopsCompleted: (h.stops || []).filter((s: any) => s.completed).length,
+        totalStops: (h.stops || []).length,
+        distanceKm: +((h.route?.distance || 0) / 1000).toFixed(1),
+        rating: h.rating || null,
+        completedAt: h.completedAt || h.createdAt,
+      }));
+  }
 
   async getHunt(id: string) {
     return this.huntModel.findById(id).lean();
@@ -472,10 +1254,34 @@ export class HuntsService {
       const coords = data.features?.[0]?.geometry?.coordinates || [];
       const polyline = coords.map((c: number[]) => ({ latitude: c[1], longitude: c[0] }));
       const summary = data.features?.[0]?.properties?.summary || {};
+      const segments = data.features?.[0]?.properties?.segments || [];
+
+      // Extract turn-by-turn instructions
+      const instructions: Array<{
+        instruction: string;
+        distance: number;
+        duration: number;
+        type: number;
+      }> = [];
+      for (const segment of segments) {
+        const steps = segment.steps || [];
+        for (const step of steps) {
+          if (step.instruction) {
+            instructions.push({
+              instruction: step.instruction,
+              distance: step.distance || 0,
+              duration: step.duration || 0,
+              type: step.type || 0,
+            });
+          }
+        }
+      }
+
       return {
         polyline,
         distance: summary.distance || 0,
         duration: summary.duration || 0,
+        instructions,
       };
     } catch (err) {
       // Fallback: straight line
@@ -486,6 +1292,7 @@ export class HuntsService {
         ],
         distance: 0,
         duration: 0,
+        instructions: [],
       };
     }
   }

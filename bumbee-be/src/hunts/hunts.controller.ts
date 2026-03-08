@@ -7,11 +7,23 @@ import { GenerateHuntDto } from './dto/generate-hunt.dto';
 @Controller('hunts')
 @UseGuards(JwtAuthGuard)
 export class HuntsController {
-  constructor(private readonly huntsService: HuntsService) {}
+  constructor(private readonly huntsService: HuntsService) { }
 
   @Post('generate')
   async generate(@Req() req: any, @Body() dto: GenerateHuntDto) {
     const data = await this.huntsService.generate(req.user.userId, dto);
+    return { success: true, data };
+  }
+
+  @Get('history')
+  async getHistory(@Req() req: any) {
+    const data = await this.huntsService.getHistory(req.user.userId);
+    return { success: true, data };
+  }
+
+  @Post('route')
+  async getRoute(@Body() body: { fromLat: number; fromLng: number; toLat: number; toLng: number }) {
+    const data = await this.huntsService.getWalkingRoute(body.fromLat, body.fromLng, body.toLat, body.toLng);
     return { success: true, data };
   }
 
@@ -53,7 +65,6 @@ export class HuntsController {
   @Patch(':id/rating')
   async rateHunt(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     const data = await this.huntsService.rateHunt(id, body);
-    // If 5-star rating, save theme to favorites
     if (body.rating === 5) {
       await this.huntsService.saveThemeToFavorites(req.user.userId, id);
     }
@@ -63,12 +74,6 @@ export class HuntsController {
   @Post(':id/recap')
   async generateRecap(@Param('id') id: string) {
     const data = await this.huntsService.generateRecap(id);
-    return { success: true, data };
-  }
-
-  @Post('route')
-  async getRoute(@Body() body: { fromLat: number; fromLng: number; toLat: number; toLng: number }) {
-    const data = await this.huntsService.getWalkingRoute(body.fromLat, body.fromLng, body.toLat, body.toLng);
     return { success: true, data };
   }
 }

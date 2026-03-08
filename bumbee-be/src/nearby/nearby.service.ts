@@ -15,7 +15,7 @@ export class NearbyService {
   }
 
   async checkNearby(userId: string, lat: number, lng: number) {
-    // Store user location with TTL
+    // Store user location with TTL of 5 minutes
     await this.redis.set(
       `nearby:${userId}`,
       JSON.stringify({ lat, lng, userId }),
@@ -23,7 +23,6 @@ export class NearbyService {
       300,
     );
 
-    // Find all nearby users
     const keys = await this.redis.keys('nearby:*');
     const nearbyUsers: any[] = [];
 
@@ -45,5 +44,36 @@ export class NearbyService {
     }
 
     return nearbyUsers;
+  }
+
+  /**
+   * Wave at another family — creates or returns a shared chat room key stored in Redis.
+   * Both parties joining the same room key enables real-time chat via the ChatGateway.
+   */
+  async wave(fromUserId: string, toUserId: string): Promise<{ roomId: string }> {
+    // Deterministic room ID so both parties always join the same room
+    const sorted = [fromUserId, toUserId].sort();
+    const roomId = `room:${sorted[0]}:${sorted[1]}`;
+
+    // Persist wave intent so the other party can detect it
+    await this.redis.set(`wave:${fromUserId}:${toUserId}`, '1', 'EX', 120);
+
+    return { roomId };
+  }
+
+  /**
+   * Report a nearby user — stores the report flag in Redis for moderator review.
+   * In a production system this would write to a Report collection.
+   */
+  async report(reportingUserId: string, reportedUserId: string, reason: string): Promise<void> {
+    const key = `report:${reportingUserId}:${reportedUserId}`;
+    await this.redis.set(
+      key,
+      JSON.stringify({ reportingUserId, reportedUserId, reason, timestamp: Date.now() }),
+      'EX',
+      86400 * 7, // 7 days
+    );
+    // Also block future nearby visibility between the two users
+    await this.redis.set(`block:${reportingUserId}:${reportedUserId}`, '1', 'EX', 86400 * 30);
   }
 }

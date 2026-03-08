@@ -24,10 +24,18 @@ export class HuntStop {
   @Prop() taskPrompt: string;        // e.g. "Count how many fountains spray water"
   @Prop() taskAnswer: string;        // expected answer for COUNT/RIDDLE tasks
   @Prop() missionTitle: string;      // short action title: "Find the tallest slide"
+  @Prop() address: string;               // human-readable address from Overpass addr:* tags
+  @Prop() googleMapsLink: string;         // https://www.google.com/maps/dir/?api=1&destination=LAT,LNG
+  @Prop({ default: false }) isFinale: boolean;
   @Prop({ default: false }) completed: boolean;
   @Prop() completedAt: Date;
   @Prop() photoUrl: string;
   @Prop({ default: false }) unlocked: boolean;
+  
+  // New fields for budget and environment
+  @Prop({ default: 0 }) estimatedCost: number;
+  @Prop({ default: 0 }) priceLevel: number; // 0-4 from Google Places
+  @Prop() environment: string; // 'indoor' | 'outdoor' | 'mixed'
 }
 
 @Schema({ timestamps: true })
@@ -53,6 +61,32 @@ export class Hunt {
   @Prop({ type: [{ lat: Number, lng: Number }], default: [] })
   walkedPath: { lat: number; lng: number }[];
   @Prop({ type: Object }) preferences: Record<string, any>;
+  
+  // New fields for budget and transport mode
+  @Prop() budget: number;
+  @Prop() transportMode: string; // 'walking' | 'car'
+  @Prop() environment: string; // 'indoor' | 'outdoor' | 'mixed'
+  @Prop({ default: 0 }) totalEstimatedCost: number;
+  
+  @Prop({
+    type: {
+      placeName: String,
+      address: String,
+      lat: Number,
+      lng: Number,
+      googleMapsLink: String,
+      task: String,
+    },
+    default: null,
+  })
+  finale: {
+    placeName: string;
+    address: string;
+    lat: number;
+    lng: number;
+    googleMapsLink: string;
+    task: string;
+  } | null;
 }
 
 export const HuntSchema = SchemaFactory.createForClass(Hunt);
